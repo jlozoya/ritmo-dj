@@ -16,6 +16,7 @@ export const requests = sqliteTable('requests', {
   guest: text('guest').notNull(),
   message: text('message').notNull(),
   spotify: text('spotify').notNull(),
+  image: text('image'),
   status: text('status').notNull().default('pending'),
   created: text('created').notNull(),
   client: text('client').notNull(),

@@ -1,72 +1,147 @@
 'use client';
+import { useState } from 'react';
+import Image from 'next/image';
 import { Button } from 'react-aria-components';
-import { Check, Music2, Play, X } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Check,
+  Clock3,
+  LoaderCircle,
+  Music2,
+  Play,
+  Undo2,
+  UserRound,
+  X,
+} from 'lucide-react';
 import type { SongRequest, RequestStatus } from '@/types/music';
 
 export function SongCard({
   song,
   index,
   onUpdate,
+  isUpdating = false,
 }: {
   song: SongRequest;
   index: number;
   onUpdate: (id: string, status: RequestStatus) => void;
+  isUpdating?: boolean;
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const created = new Date(song.created);
   return (
-    <article className="song">
-      <div className={`song-cover color-${index % 4}`} aria-hidden="true">
-        <Music2 size={22} />
+    <article
+      className="song"
+      data-status={song.status}
+      aria-label={`${song.title}, ${song.artist}`}
+      aria-busy={isUpdating}
+    >
+      <div className="song-body">
+        <div className="song-heading">
+          {song.image && !imageFailed ? (
+            <Image
+              className="song-cover"
+              src={song.image}
+              alt=""
+              width={64}
+              height={64}
+              unoptimized
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <div className={`song-cover color-${index % 4}`} aria-hidden="true">
+              <Music2 size={26} />
+            </div>
+          )}
+          <div className="song-info">
+            <h3>{song.title}</h3>
+            <p className="song-artist">{song.artist}</p>
+            <div className="song-meta">
+              <span>
+                <UserRound size={13} aria-hidden="true" />
+                {song.guest}
+              </span>
+              <time
+                dateTime={song.created}
+                title={created.toLocaleString('es-MX')}
+              >
+                <Clock3 size={13} aria-hidden="true" />
+                {created.toLocaleTimeString('es-MX', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </time>
+            </div>
+          </div>
+        </div>
+        {song.message && (
+          <blockquote className="song-message">{song.message}</blockquote>
+        )}
       </div>
-      <div className="song-info">
-        <h3>{song.title}</h3>
-        <p>{song.artist}</p>
-        <small>
-          {song.guest} ·{' '}
-          {new Date(song.created).toLocaleTimeString('es-MX', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </small>
-        {song.message && <blockquote>“{song.message}”</blockquote>}
+      <div className="song-footer">
         {song.spotify && (
-          <a href={song.spotify} target="_blank" rel="noopener noreferrer">
-            Escuchar en Spotify ↗
+          <a
+            className="song-spotify"
+            href={song.spotify}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Abrir en Spotify <ArrowUpRight size={14} />
           </a>
         )}
-      </div>
-      <div className="song-actions">
-        {song.status === 'pending' && (
-          <>
+        {isUpdating && (
+          <span className="song-saving" role="status">
+            <LoaderCircle className="song-spinner" size={14} /> Guardando…
+          </span>
+        )}
+        <div
+          className="song-actions"
+          role="group"
+          aria-label={`Acciones para ${song.title}`}
+        >
+          {song.status === 'pending' && (
+            <>
+              <Button
+                aria-label={`Aceptar ${song.title}`}
+                className="song-accept"
+                isDisabled={isUpdating}
+                onPress={() => onUpdate(song.id, 'accepted')}
+              >
+                <Check size={16} />
+                Aceptar
+              </Button>
+              <Button
+                aria-label={`Descartar ${song.title}`}
+                className="song-reject"
+                isDisabled={isUpdating}
+                onPress={() => onUpdate(song.id, 'rejected')}
+              >
+                <X size={16} /> Descartar
+              </Button>
+            </>
+          )}
+          {song.status === 'accepted' && (
             <Button
-              aria-label={`Aceptar ${song.title}`}
-              onPress={() => onUpdate(song.id, 'accepted')}
+              aria-label={`Marcar ${song.title} como tocada`}
+              className="song-accept"
+              isDisabled={isUpdating}
+              onPress={() => onUpdate(song.id, 'played')}
             >
-              <Check size={18} />
+              <Play size={16} />
+              Marcar tocada
             </Button>
+          )}
+          {(song.status === 'played' || song.status === 'rejected') && (
             <Button
-              aria-label={`Descartar ${song.title}`}
-              onPress={() => onUpdate(song.id, 'rejected')}
+              aria-label={`Volver ${song.title} a pendientes`}
+              className="song-restore"
+              isDisabled={isUpdating}
+              onPress={() => onUpdate(song.id, 'pending')}
             >
-              <X size={18} />
+              <Undo2 size={16} />
+              Volver a pendientes
             </Button>
-          </>
-        )}
-        {song.status === 'accepted' && (
-          <Button
-            aria-label={`Marcar ${song.title} como tocada`}
-            onPress={() => onUpdate(song.id, 'played')}
-          >
-            <Play size={18} />
-          </Button>
-        )}
-        {(song.status === 'played' || song.status === 'rejected') && (
-          <Button
-            aria-label={`Volver ${song.title} a pendientes`}
-            onPress={() => onUpdate(song.id, 'pending')}
-          >
-            ↩
-          </Button>
-        )}
+          )}
+        </div>
       </div>
     </article>
   );

@@ -137,6 +137,12 @@ export async function createSongRequest(
     client,
     message: String(body.message || '').slice(0, 240),
     spotify,
+    image:
+      typeof body.image === 'string' &&
+      /^https:\/\/i\.scdn\.co\/image\/[A-Za-z0-9]+$/.test(body.image) &&
+      body.image.length <= 2048
+        ? body.image
+        : null,
     status: 'pending',
     created: new Date().toISOString(),
   });

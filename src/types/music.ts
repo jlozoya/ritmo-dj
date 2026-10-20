@@ -14,6 +14,7 @@ export interface SongRequest {
   guest: string;
   message: string;
   spotify: string;
+  image: string | null;
   status: RequestStatus;
   created: string;
 }

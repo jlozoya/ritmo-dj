@@ -40,6 +40,7 @@ export function DJDashboard({
   const [toast, setToast] = useState('');
   const [sound, setSound] = useState(false);
   const [lastSync, setLastSync] = useState(false);
+  const [updatingRequests, setUpdatingRequests] = useState<string[]>([]);
   const seen = useRef<Set<string> | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const soundRef = useRef(false);
@@ -177,11 +178,19 @@ export function DJDashboard({
     status?: RequestStatus;
   }) {
     if (!event) return;
+    const requestId = body.requestId;
+    if (requestId && updatingRequests.includes(requestId)) return;
+    if (requestId) setUpdatingRequests((previous) => [...previous, requestId]);
     try {
       await api(`/api/event/${encodeURIComponent(event.id)}`, body, 'PATCH');
       await refresh(event.id);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      if (requestId)
+        setUpdatingRequests((previous) =>
+          previous.filter((id) => id !== requestId),
+        );
     }
   }
 
@@ -209,6 +218,7 @@ export function DJDashboard({
         error={error}
         lastSync={lastSync}
         sound={sound}
+        updatingRequests={updatingRequests}
         onNewEvent={() => {
           setError('');
           setModal(true);

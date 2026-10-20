@@ -118,6 +118,7 @@ export function RequestPage({ eventId }: { eventId: string }) {
         title: selectedTrack.title,
         artist: selectedTrack.artist,
         spotify: selectedTrack.spotify,
+        image: selectedTrack.image,
         client,
       });
       setForm((previous) => ({ ...emptyForm, guest: previous.guest }));

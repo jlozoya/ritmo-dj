@@ -49,6 +49,7 @@ export function DJPanel({
   onAlerts,
   onDismissError,
   onToast,
+  updatingRequests = [],
 }: {
   user: { name: string; email: string };
   onSignOut: () => void;
@@ -68,6 +69,7 @@ export function DJPanel({
   onAlerts: () => void;
   onDismissError: () => void;
   onToast: (message: string) => void;
+  updatingRequests?: string[];
 }) {
   const [filter, setFilter] = useState<RequestStatus>('pending');
   const rows = event?.requests || [];
@@ -294,6 +296,7 @@ export function DJPanel({
                                 key={song.id}
                                 song={song}
                                 index={i}
+                                isUpdating={updatingRequests.includes(song.id)}
                                 onUpdate={(id, state) =>
                                   onUpdate({ requestId: id, status: state })
                                 }

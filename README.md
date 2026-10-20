@@ -25,6 +25,8 @@ advertencias, formato, tipos, pruebas unitarias y compilación.
 - **Búsqueda de Spotify** por canción o artista, con portada y selección de la coincidencia correcta.
 - La selección muestra portada, título, artista y enlace oficial de Spotify sin campos editables. Puedes quitarla para elegir otra canción.
 - Las peticiones requieren seleccionar una canción del catálogo de Spotify.
+- La cabina muestra cada petición con portada, artista, invitado, hora y mensaje,
+  con acciones para aceptar, descartar, marcar tocada o devolver a pendientes.
 - Nombre y dedicatoria opcionales del invitado.
 - Cola persistente en D1 con cuatro estados: pendiente, aceptada, tocada y descartada.
 - Actualización automática cada 3 segundos en la cabina; avisos visuales, sonido opcional y notificaciones del navegador con permiso.

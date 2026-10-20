@@ -203,6 +203,8 @@ try {
           artist: 'Test artist',
           client: prefix,
           spotify: 'https://open.spotify.com/track/2cGxRwrMyEAp8dEbuZaVv6',
+          image:
+            'https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937',
         },
       })
     ).status === 200,
@@ -212,6 +214,12 @@ try {
     (await request(eventPath, { cookie: first.cookie })).body.requests
       .length === 1,
     'The owner must see incoming requests.',
+  );
+  check(
+    (await request(eventPath, { cookie: first.cookie })).body.requests[0]
+      .image ===
+      'https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937',
+    'The DJ must receive the selected Spotify artwork with the request.',
   );
 
   const second = await request('/api/auth/sign-up/email', {
