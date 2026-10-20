@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "typecheck": "node node_modules/vinext/dist/cli.js typegen && tsc --noEmit",
     "test:auth": "node tests/integration/auth.test.mjs",
+    "sites:prepare": "node scripts/prepare-sites-source.mjs",
     "db:migrate:local": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local --config wrangler.local.json --persist-to .wrangler/state",
     "format": "prettier --write src infrastructure tests docs .github package.json tsconfig.json vite.config.ts drizzle.config.ts components.json eslint.config.mjs",
     "format:check": "prettier --check src infrastructure tests docs .github package.json tsconfig.json vite.config.ts drizzle.config.ts components.json eslint.config.mjs",

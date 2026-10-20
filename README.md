@@ -9,6 +9,10 @@ El código se organiza en `src/`: rutas en `app`, interfaz por función en
 de Cloudflare está en `infrastructure/sites`, las pruebas en `tests` y las
 convenciones en [docs/architecture.md](./docs/architecture.md).
 
+La publicación en Sites y el procedimiento para actualizarla se describen en
+[docs/deployment-sites.md](./docs/deployment-sites.md). `bun run sites:prepare`
+prepara la copia de publicación; Codex completa el despliegue con el plugin Sites.
+
 ESLint comprueba el código con las reglas de TypeScript y React/Next. Ejecuta
 `bun run lint` para validar o `bun run lint:fix` para aplicar las correcciones
 automáticas disponibles. La integración continua de GitHub verifica lint sin
