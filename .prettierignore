@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+.vinext/
+.wrangler/
+.sites-runtime/
+outputs/
+vendor/
+src/components/ui/
+src/hooks/use-mobile.ts
+drizzle/

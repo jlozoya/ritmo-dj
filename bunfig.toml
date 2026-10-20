@@ -1,0 +1,6 @@
+# Maintain the isolated node_modules layout used by the previous pnpm installation.
+[install]
+linker = "isolated"
+
+# Optional: after validating the initial install, set minimumReleaseAge = 604800
+# to block dependency releases newer than seven days when resolving updates.
