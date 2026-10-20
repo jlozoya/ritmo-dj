@@ -26,7 +26,7 @@ export function SongCard({
   onUpdate: (id: string, status: RequestStatus) => void;
   isUpdating?: boolean;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
   const created = new Date(song.created);
   return (
     <article
@@ -37,7 +37,7 @@ export function SongCard({
     >
       <div className="song-body">
         <div className="song-heading">
-          {song.image && !imageFailed ? (
+          {song.image && song.image !== failedImage ? (
             <Image
               className="song-cover"
               src={song.image}
@@ -45,7 +45,7 @@ export function SongCard({
               width={64}
               height={64}
               unoptimized
-              onError={() => setImageFailed(true)}
+              onError={() => setFailedImage(song.image)}
             />
           ) : (
             <div className={`song-cover color-${index % 4}`} aria-hidden="true">

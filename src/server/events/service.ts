@@ -1,7 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { getDb } from '@/server/db';
 import { events, requests } from '@/server/db/schema';
 import { HttpError } from '@/server/http';
+import { spotifyArtwork } from '@/server/spotify/artwork';
 import type { RequestStatus } from '@/types/music';
 
 export function listEvents(owner: string) {
@@ -47,6 +48,24 @@ export async function getEvent(id: string, userId?: string) {
         .where(eq(requests.event, id))
         .orderBy(desc(requests.created))
     : [];
+  // Backfill older requests in small batches; Spotify outages leave the queue usable.
+  await Promise.all(
+    rows
+      .filter((row) => !row.image && spotifyArtwork.canResolve(row.spotify))
+      .slice(0, 4)
+      .map(async (row) => {
+        const image = await spotifyArtwork.resolve(row.spotify);
+        if (!image) return;
+        row.image = image;
+        await getDb()
+          .update(requests)
+          .set({ image })
+          .where(and(eq(requests.id, row.id), isNull(requests.image)))
+          .catch(() => {
+            // A transient write failure must not hide the requests or artwork.
+          });
+      }),
+  );
   return {
     id: event.id,
     name: event.name,

@@ -222,6 +222,37 @@ try {
     'The DJ must receive the selected Spotify artwork with the request.',
   );
 
+  // Optional live-catalog check for requests saved before artwork was stored.
+  if (process.env.RITMO_TEST_SPOTIFY === '1') {
+    check(
+      (
+        await request(eventPath, {
+          method: 'POST',
+          body: {
+            title: 'Legacy artwork test',
+            artist: 'Test artist',
+            client: `${prefix}-legacy`,
+            spotify: 'https://open.spotify.com/track/2cGxRwrMyEAp8dEbuZaVv6',
+          },
+        })
+      ).status === 200,
+      'Requests without saved artwork must remain valid.',
+    );
+    const legacy = (
+      await request(eventPath, { cookie: first.cookie })
+    ).body.requests.find((row) => row.title === 'Legacy artwork test');
+    check(
+      /^https:\/\/i\.scdn\.co\/image\/[A-Za-z0-9]+$/.test(legacy?.image),
+      'The DJ must receive recovered artwork for an older request.',
+    );
+    check(
+      (await request(eventPath, { cookie: first.cookie })).body.requests.find(
+        (row) => row.id === legacy.id,
+      )?.image === legacy.image,
+      'Recovered artwork must remain available on subsequent queue refreshes.',
+    );
+  }
+
   const second = await request('/api/auth/sign-up/email', {
     method: 'POST',
     ip: testIP(2),

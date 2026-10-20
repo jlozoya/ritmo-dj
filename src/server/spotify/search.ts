@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { clearSpotifyToken, getSpotifyToken } from '@/server/spotify/token';
 import type { SpotifyTrack } from '@/types/music';
 
 /** Spotify Client Credentials: only metadata, never playback or user data. */
@@ -11,44 +12,12 @@ type SpotifyItem = {
   external_urls?: { spotify?: string };
   duration_ms: number;
 };
-type TokenResponse = { access_token: string; expires_in: number };
-
-let cachedToken: { value: string; expiresAt: number } | null = null;
 
 function reply(body: unknown, status = 200) {
   return Response.json(body, {
     status,
     headers: { 'Cache-Control': 'no-store' },
   });
-}
-
-async function getToken(
-  clientId: string,
-  clientSecret: string,
-): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now())
-    return cachedToken.value;
-  const auth = btoa(`${clientId}:${clientSecret}`);
-  const response = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ grant_type: 'client_credentials' }),
-  });
-  if (!response.ok)
-    throw new Error(
-      response.status === 401 || response.status === 400
-        ? 'SPOTIFY_BAD_CREDENTIALS'
-        : 'SPOTIFY_TOKEN_ERROR',
-    );
-  const token = (await response.json()) as TokenResponse;
-  cachedToken = {
-    value: token.access_token,
-    expiresAt: Date.now() + Math.max(0, token.expires_in - 60) * 1000,
-  };
-  return token.access_token;
 }
 
 export async function GET(request: Request) {
@@ -64,7 +33,7 @@ export async function GET(request: Request) {
   if (query.length < 2) return reply({ configured: true, tracks: [] });
 
   try {
-    const token = await getToken(clientId, clientSecret);
+    const token = await getSpotifyToken(clientId, clientSecret);
     const params = new URLSearchParams({
       q: query,
       type: 'track',
@@ -103,7 +72,7 @@ export async function GET(request: Request) {
           },
           503,
         );
-      if (response.status === 401) cachedToken = null;
+      if (response.status === 401) clearSpotifyToken();
       throw new Error('SPOTIFY_SEARCH_ERROR');
     }
     const data = (await response.json()) as {

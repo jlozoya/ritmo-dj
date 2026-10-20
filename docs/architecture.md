@@ -71,4 +71,10 @@ Para la integración, inicia `bun run dev --port 5184` y ejecuta
 `bun run test:auth` en otra terminal. Estas pruebas usan cuentas y eventos
 desechables que eliminan al terminar. El estado de D1 sigue en `.wrangler/state`.
 
+Con credenciales locales de Spotify, `RITMO_TEST_SPOTIFY=1` añade una comprobación
+de recuperación de portadas para peticiones anteriores. Las portadas faltantes se
+consultan por el ID exacto de Spotify y se guardan en D1 al abrir la cabina. Cada
+consulta completa hasta cuatro peticiones; los fallos de Spotify se reintentan
+después de cinco minutos sin impedir el acceso a la lista.
+
 La carpeta `src/` y las rutas siguen las [convenciones del framework](https://nextjs.org/docs/app/api-reference/file-conventions/src-folder).
