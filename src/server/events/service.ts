@@ -110,8 +110,15 @@ export async function createSongRequest(
     .trim()
     .slice(0, 60);
   const client = String(body.client || '').slice(0, 80);
-  if (!title || !artist || !client)
-    throw new HttpError(400, 'Escribe la canción y el artista.');
+  const spotify =
+    typeof body.spotify === 'string' &&
+    /^https:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]{22}$/.test(body.spotify)
+      ? body.spotify
+      : '';
+  if (!title || !artist || !spotify)
+    throw new HttpError(400, 'Selecciona una canción de Spotify.');
+  if (!client)
+    throw new HttpError(400, 'Recarga la página e intenta enviar la petición.');
   const db = getDb();
   const [recent] = await db
     .select()
@@ -121,11 +128,6 @@ export async function createSongRequest(
     .limit(1);
   if (recent && Date.now() - Date.parse(recent.created) < 30_000)
     throw new HttpError(429, 'Espera 30 segundos entre peticiones.');
-  const spotify =
-    typeof body.spotify === 'string' &&
-    /^https:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]+$/.test(body.spotify)
-      ? body.spotify
-      : '';
   await db.insert(requests).values({
     id: crypto.randomUUID(),
     event: id,

@@ -1369,20 +1369,67 @@ button,
   margin-top: 9px;
 }
 .selected-track {
-  display: flex;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 36px;
   align-items: center;
-  gap: 7px;
-  color: #c5e2ba;
-  padding: 11px 12px;
-  background: #203024;
-  border: 1px solid #416147;
-  border-radius: 9px;
-  margin: 10px 0 17px;
+  gap: 14px;
+  padding: 16px;
+  background: #1c1825;
+  border: 1px solid #c2a4ff50;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.selected-track .selected-track-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.selected-track-details {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.selected-track h2 {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.selected-track p {
+  margin-top: 5px;
+  color: #b0a8bd;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.selected-track a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 9px;
+  color: var(--accent);
   font-size: 11px;
 }
-.selected-track button {
-  margin-left: auto;
-  padding: 2px;
+.selected-track-remove {
+  width: 36px;
+  height: 44px;
+  align-self: start;
+  color: #b0a8bd;
+}
+.selected-track-remove[data-hovered] {
+  color: #f4f2f9;
+  background: #c2a4ff18;
+}
+@media (max-width: 400px) {
+  .selected-track {
+    grid-template-columns: 64px minmax(0, 1fr) 32px;
+    padding: 12px;
+    gap: 10px;
+  }
+  .selected-track .selected-track-cover {
+    width: 64px;
+    height: 64px;
+  }
+  .selected-track-remove {
+    width: 32px;
+  }
 }
 .qr-box {
   display: flex;

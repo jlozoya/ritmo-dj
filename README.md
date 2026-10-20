@@ -19,8 +19,8 @@ advertencias, formato, tipos, pruebas unitarias y compilación.
 - **Código QR por evento**, visible en la cabina y descargable como PNG.
 - Enlace público `https://tu-dominio/?evento=<id>` para abrir desde un celular.
 - **Búsqueda de Spotify** por canción o artista, con portada y selección de la coincidencia correcta.
-- La canción seleccionada precarga título, artista y enlace oficial de Spotify.
-- Formulario manual disponible si la API de Spotify no está configurada, no devuelve resultados o está temporalmente limitada.
+- La selección muestra portada, título, artista y enlace oficial de Spotify sin campos editables. Puedes quitarla para elegir otra canción.
+- Las peticiones requieren seleccionar una canción del catálogo de Spotify.
 - Nombre y dedicatoria opcionales del invitado.
 - Cola persistente en D1 con cuatro estados: pendiente, aceptada, tocada y descartada.
 - Actualización automática cada 3 segundos en la cabina; avisos visuales, sonido opcional y notificaciones del navegador con permiso.
@@ -111,7 +111,7 @@ bunx wrangler secret put SPOTIFY_CLIENT_SECRET
 
 La API `GET /api/search?q=...` usa **OAuth Client Credentials** desde el servidor, mantiene el token temporalmente en memoria de la instancia y consulta la búsqueda oficial `/v1/search` (máximo 10 resultados por consulta, mercado MX). Los invitados no tienen que autenticar su cuenta de Spotify.
 
-**Límites de Spotify en 2026:** las apps en Development Mode requieren Spotify Premium por parte del titular, tienen cuotas limitadas y no garantizan disponibilidad para uso comercial o de gran escala. Si Spotify devuelve 403/429 o falla, los asistentes pueden escribir el nombre de la canción y el artista a mano. Consulta [cuotas](https://developer.spotify.com/documentation/web-api/concepts/quota-modes) y [la actualización de julio de 2026](https://developer.spotify.com/blog/2026-07-23-web-api-quota-updates).
+Si Spotify devuelve un error o no está configurado, la interfaz muestra el problema y no permite enviar canciones manuales. Consulta las [cuotas de Spotify](https://developer.spotify.com/documentation/web-api/concepts/quota-modes) para configurar la aplicación.
 
 **Spotify solo sirve como catálogo y enlace de referencia:** el proyecto no descarga audio, no reproduce tracks ni escribe en listas de reproducción de Spotify.
 
@@ -119,7 +119,7 @@ La API `GET /api/search?q=...` usa **OAuth Client Credentials** desde el servido
 
 1. El DJ entra al panel, crea un evento y visualiza su QR en la columna lateral.
 2. Lo descarga como PNG para imprimir/proyectar, o copia el enlace.
-3. Los invitados escanean, buscan una canción en Spotify o la escriben manualmente, añaden sus datos opcionales y pulsan **Enviar petición**.
+3. Los invitados escanean, seleccionan una canción de Spotify, añaden sus datos opcionales y pulsan **Enviar petición**.
 4. La nueva solicitud aparece en el panel (intervalo de actualización de 3 segundos); el DJ puede aceptarla, descartarla y marcarla como tocada.
 5. El DJ puede pausar la entrada de solicitudes sin perder la lista.
 

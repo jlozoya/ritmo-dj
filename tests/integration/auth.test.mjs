@@ -175,7 +175,35 @@ try {
     (
       await request(eventPath, {
         method: 'POST',
-        body: { title: 'Test song', artist: 'Test artist', client: prefix },
+        body: { title: 'Manual song', artist: 'Manual artist', client: prefix },
+      })
+    ).status === 400,
+    'Manual song requests without a Spotify selection must be rejected.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'POST',
+        body: {
+          title: 'Invalid selection',
+          artist: 'Test artist',
+          client: prefix,
+          spotify: 'https://example.test/track/2cGxRwrMyEAp8dEbuZaVv6',
+        },
+      })
+    ).status === 400,
+    'A non-Spotify link must not count as a selected song.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'POST',
+        body: {
+          title: 'Test song',
+          artist: 'Test artist',
+          client: prefix,
+          spotify: 'https://open.spotify.com/track/2cGxRwrMyEAp8dEbuZaVv6',
+        },
       })
     ).status === 200,
     'Guests must be able to request a song without an account.',

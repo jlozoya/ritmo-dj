@@ -131,7 +131,7 @@ export async function GET(request: Request) {
     const message =
       (error as Error).message === 'SPOTIFY_BAD_CREDENTIALS'
         ? 'Las credenciales de Spotify no son válidas.'
-        : 'Spotify no está disponible. Puedes escribir la canción manualmente.';
+        : 'Spotify no está disponible. Inténtalo de nuevo más tarde.';
     return reply({ configured: true, tracks: [], error: message }, 503);
   }
 }

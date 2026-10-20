@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import {
   Button,
@@ -18,27 +18,21 @@ import {
   Plus,
   Radio,
   Search,
-  X,
 } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { LoadingState } from '@/components/loading-state';
 import { api } from '@/lib/http';
 import type { EventDetail, SpotifyTrack } from '@/types/music';
 import { useTrackSearch } from '@/features/spotify/hooks/use-track-search';
+import { SelectedTrack } from './components/selected-track';
 
 type RequestForm = {
-  title: string;
-  artist: string;
   guest: string;
   message: string;
-  spotify: string;
 };
 const emptyForm: RequestForm = {
-  title: '',
-  artist: '',
   guest: '',
   message: '',
-  spotify: '',
 };
 
 export function RequestPage({ eventId }: { eventId: string }) {
@@ -47,6 +41,8 @@ export function RequestPage({ eventId }: { eventId: string }) {
   const [error, setError] = useState('');
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [query, setQuery] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
+  const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const { tracks, searchError, searching } = useTrackSearch(
     query,
     Boolean(configured),
@@ -88,18 +84,26 @@ export function RequestPage({ eventId }: { eventId: string }) {
   }, [eventId]);
 
   function chooseTrack(track: SpotifyTrack) {
-    setForm((previous) => ({
-      ...previous,
-      title: track.title,
-      artist: track.artist,
-      spotify: track.spotify,
-    }));
+    setSelectedTrack(track);
+    setError('');
     setQuery('');
+  }
+
+  function removeTrack() {
+    setSelectedTrack(null);
+    setQuery('');
+    setError('');
+    requestAnimationFrame(() => searchInput.current?.focus());
   }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (sending) return;
+    if (!selectedTrack) {
+      setError('Selecciona una canción de Spotify.');
+      searchInput.current?.focus();
+      return;
+    }
     setSending(true);
     setError('');
     try {
@@ -110,11 +114,13 @@ export function RequestPage({ eventId }: { eventId: string }) {
       }
       await api<{ ok: boolean }>(`/api/event/${encodeURIComponent(eventId)}`, {
         ...form,
-        title: form.title.trim(),
-        artist: form.artist.trim(),
+        title: selectedTrack.title,
+        artist: selectedTrack.artist,
+        spotify: selectedTrack.spotify,
         client,
       });
       setForm((previous) => ({ ...emptyForm, guest: previous.guest }));
+      setSelectedTrack(null);
       setQuery('');
       setSent(true);
     } catch (e) {
@@ -177,133 +183,101 @@ export function RequestPage({ eventId }: { eventId: string }) {
             </div>
           ) : (
             <form className="guest-form" onSubmit={submit}>
-              <div className="spotify-search">
-                <TextField
-                  value={query}
-                  onChange={setQuery}
-                  isDisabled={!configured}
-                >
-                  <Label>
-                    <span className="label-icon">
-                      <Search size={17} />
-                    </span>
-                    Buscar en Spotify
-                  </Label>
-                  <Input
-                    autoComplete="off"
-                    placeholder={
-                      configured === false
-                        ? 'Búsqueda no disponible'
-                        : 'Canción o artista…'
-                    }
-                  />
-                </TextField>
-                {searching && (
-                  <p className="search-hint" role="status">
-                    Buscando canciones…
-                  </p>
-                )}
-                {searchError && (
-                  <p className="search-hint search-error" role="alert">
-                    {searchError} Puedes escribir el título manualmente.
-                  </p>
-                )}
-                {configured === false && (
-                  <p className="search-hint">
-                    Escribe el título y el artista en los campos de abajo.
-                  </p>
-                )}
-                {tracks.length > 0 && (
-                  <ListBox
-                    className="spotify-results"
-                    aria-label="Resultados de Spotify"
-                    onAction={(key) => {
-                      const track = tracks.find((t) => t.id === String(key));
-                      if (track) chooseTrack(track);
-                    }}
+              {selectedTrack ? (
+                <SelectedTrack
+                  track={selectedTrack}
+                  onRemove={removeTrack}
+                  isDisabled={sending}
+                />
+              ) : (
+                <div className="spotify-search">
+                  <TextField
+                    value={query}
+                    onChange={setQuery}
+                    isDisabled={!configured}
                   >
-                    {tracks.map((track) => (
-                      <ListBoxItem
-                        id={track.id}
-                        key={track.id}
-                        textValue={`${track.title} — ${track.artist}`}
-                        className="spotify-option"
-                      >
-                        {track.image ? (
-                          <Image
-                            src={track.image}
-                            alt=""
-                            width={44}
-                            height={44}
-                            loading="lazy"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="track-placeholder">
-                            <Music2 size={20} />
-                          </div>
-                        )}
-                        <span>
-                          <strong>{track.title}</strong>
-                          <small>{track.artist}</small>
-                        </span>
-                        <Plus size={18} />
-                      </ListBoxItem>
-                    ))}
-                  </ListBox>
-                )}
-                {!searching &&
-                  query.trim().length >= 2 &&
-                  configured &&
-                  tracks.length === 0 &&
-                  !searchError && (
-                    <p className="search-hint">
-                      Sin resultados. Puedes escribir la canción manualmente.
+                    <Label>
+                      <span className="label-icon">
+                        <Search size={17} />
+                      </span>
+                      Buscar en Spotify
+                    </Label>
+                    <Input
+                      ref={searchInput}
+                      autoComplete="off"
+                      placeholder={
+                        configured === false
+                          ? 'Búsqueda no disponible'
+                          : 'Canción o artista…'
+                      }
+                    />
+                  </TextField>
+                  {searching && (
+                    <p className="search-hint" role="status">
+                      Buscando canciones…
                     </p>
                   )}
-              </div>
-              {form.spotify && (
-                <div className="selected-track">
-                  <Check size={15} />
-                  Seleccionada desde Spotify
-                  <Button
-                    aria-label="Quitar canción seleccionada"
-                    onPress={() =>
-                      setForm((previous) => ({ ...previous, spotify: '' }))
-                    }
-                  >
-                    <X size={15} />
-                  </Button>
+                  {searchError && (
+                    <p className="search-hint search-error" role="alert">
+                      {searchError}
+                    </p>
+                  )}
+                  {configured === false && (
+                    <p className="search-hint">
+                      La búsqueda de Spotify no está disponible. Inténtalo más
+                      tarde.
+                    </p>
+                  )}
+                  {tracks.length > 0 && (
+                    <ListBox
+                      className="spotify-results"
+                      aria-label="Resultados de Spotify"
+                      onAction={(key) => {
+                        const track = tracks.find((t) => t.id === String(key));
+                        if (track) chooseTrack(track);
+                      }}
+                    >
+                      {tracks.map((track) => (
+                        <ListBoxItem
+                          id={track.id}
+                          key={track.id}
+                          textValue={`${track.title} — ${track.artist}`}
+                          className="spotify-option"
+                        >
+                          {track.image ? (
+                            <Image
+                              src={track.image}
+                              alt=""
+                              width={44}
+                              height={44}
+                              loading="lazy"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="track-placeholder">
+                              <Music2 size={20} />
+                            </div>
+                          )}
+                          <span>
+                            <strong>{track.title}</strong>
+                            <small>{track.artist}</small>
+                          </span>
+                          <Plus size={18} />
+                        </ListBoxItem>
+                      ))}
+                    </ListBox>
+                  )}
+                  {!searching &&
+                    query.trim().length >= 2 &&
+                    configured &&
+                    tracks.length === 0 &&
+                    !searchError && (
+                      <p className="search-hint">
+                        Sin resultados. Prueba con otro título o artista.
+                      </p>
+                    )}
                 </div>
               )}
-              <TextField
-                isRequired
-                value={form.title}
-                onChange={(value) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    title: value,
-                    spotify: '',
-                  }))
-                }
-              >
-                <Label>Canción</Label>
-                <Input maxLength={120} />
-              </TextField>
-              <TextField
-                isRequired
-                value={form.artist}
-                onChange={(value) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    artist: value,
-                    spotify: '',
-                  }))
-                }
-              >
-                <Label>Artista</Label>
-                <Input maxLength={120} />
-              </TextField>
               <TextField
                 value={form.guest}
                 onChange={(value) =>
@@ -332,7 +306,7 @@ export function RequestPage({ eventId }: { eventId: string }) {
               <Button
                 type="submit"
                 className="primary wide"
-                isDisabled={sending}
+                isDisabled={sending || !selectedTrack}
               >
                 {sending ? 'Enviando…' : 'Enviar petición'}{' '}
                 <ArrowUpRight size={19} />
