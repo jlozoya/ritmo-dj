@@ -11,7 +11,7 @@ export function getAuth() {
     );
   }
   const baseURL =
-    env.BETTER_AUTH_URL ??
+    env.BETTER_AUTH_URL?.trim() ||
     (import.meta.env.DEV
       ? {
           allowedHosts: [
