@@ -1,10 +1,12 @@
 'use client';
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { Button } from 'react-aria-components';
 import { Headphones, LogOut, UserRound } from 'lucide-react';
 import { Brand } from './brand';
 import type { DJUser } from '@/types/music';
+
+// Vinext's client navigation can leave the production page unchanged.
+// Native links load the destination reliably while retaining the session cookie.
 
 export function DJLayout({
   user,
@@ -29,41 +31,37 @@ export function DJLayout({
         <Brand />
         <nav className="workspace-nav" aria-label="Menú principal">
           {links.map(({ href, label, id, icon: Icon }) => (
-            <Link
+            <a
               key={id}
               href={href}
               aria-current={active === id ? 'page' : undefined}
             >
               <Icon size={18} />
               <span>{label}</span>
-            </Link>
+            </a>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <Link
-            href="/perfil"
-            className="profile"
-            aria-label="Configurar perfil"
-          >
+          <a href="/perfil" className="profile" aria-label="Configurar perfil">
             <div className="avatar">{user.name.slice(0, 2).toUpperCase()}</div>
             <span>
               {user.name}
               <small>{user.email}</small>
             </span>
-          </Link>
+          </a>
         </div>
       </aside>
       <div className="main-shell">
         <header className="workspace-header">
           <nav className="workspace-mobile-nav" aria-label="Navegación">
             {links.map(({ href, label, id }) => (
-              <Link
+              <a
                 key={id}
                 href={href}
                 aria-current={active === id ? 'page' : undefined}
               >
                 {label}
-              </Link>
+              </a>
             ))}
           </nav>
           <div className="header-right">
