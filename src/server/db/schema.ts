@@ -12,6 +12,7 @@ export const events = sqliteTable('events', {
   open: integer('open').notNull().default(1),
   archived: integer('archived').notNull().default(0),
   tipUrl: text('tip_url'),
+  realtimeRetryAfter: integer('realtime_retry_after').notNull().default(0),
   created: text('created').notNull(),
 });
 export const requests = sqliteTable('requests', {

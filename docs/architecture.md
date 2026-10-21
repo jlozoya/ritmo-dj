@@ -22,6 +22,7 @@ src/
     auth/              Configuración de autenticación y verificación de sesiones
     db/                Conexión Drizzle y esquema de D1
     events/            Handlers HTTP y reglas de negocio de eventos/peticiones
+    realtime/          Tokens de Ably, avisos de cambios y respaldo por cuota
     spotify/           Consulta al catálogo y credenciales de Spotify
   integrations/sites/  Adaptadores y contratos heredados de Sites
 infrastructure/sites/  Plugins de Vite y entradas de Cloudflare Workers
@@ -66,6 +67,9 @@ El enlace de pago se abre inmediatamente aunque falle el registro del clic.
   no se añaden subtítulos promocionales, obviedades ni ayudas de otra pantalla.
 
 ## Comprobaciones
+
+La actualización por WebSocket y su respaldo están descritos en
+[realtime.md](realtime.md). Ably solo transporta avisos; D1 conserva los datos.
 
 ```sh
 bun run test

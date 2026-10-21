@@ -21,6 +21,7 @@ const eventIds = [];
 const ipSuffix = 1 + Math.floor(Math.random() * 230);
 const testIP = (offset) => `192.0.2.${ipSuffix + offset}`;
 let assertions = 0;
+let realtimeClient;
 
 async function request(
   path,
@@ -222,6 +223,52 @@ try {
     'Cross-origin event mutations must be rejected.',
   );
   const eventPath = `/api/event/${event.body.id}`;
+  const realtimePath = `${eventPath}/realtime`;
+  check(
+    (await request(realtimePath, { method: 'POST', body: {} })).status === 401,
+    'Realtime tokens require a DJ session.',
+  );
+  check(
+    (
+      await request(realtimePath, {
+        method: 'POST',
+        cookie: first.cookie,
+        origin: 'https://untrusted.example',
+        body: {},
+      })
+    ).status === 403,
+    'Cross-origin token requests must be rejected.',
+  );
+  check(
+    (
+      await request('/api/event/not-an-owned-event/realtime', {
+        method: 'POST',
+        cookie: first.cookie,
+        body: {},
+      })
+    ).status === 403,
+    'A DJ cannot request a channel token for an event they do not own.',
+  );
+  const subscription = await request(realtimePath, {
+    method: 'POST',
+    cookie: first.cookie,
+    body: { capability: { '*': ['publish'] } },
+  });
+  check(
+    subscription.status === 200 &&
+      typeof subscription.body.enabled === 'boolean',
+    'Owned events expose their realtime configuration.',
+  );
+  if (subscription.body.enabled) {
+    const claims = JSON.parse(
+      Buffer.from(subscription.body.token.split('.')[1], 'base64url'),
+    );
+    check(
+      JSON.stringify(JSON.parse(claims['x-ably-capability'])) ===
+        JSON.stringify({ [`ritmo:event:${event.body.id}`]: ['subscribe'] }),
+      'Clients cannot request publish access or channels for other events.',
+    );
+  }
   check(
     (await request(eventPath)).body.tipUrl === null,
     'New events must not advertise a payment recipient before configuration.',
@@ -303,6 +350,31 @@ try {
     ).status === 400,
     'A non-Spotify link must not count as a selected song.',
   );
+  let realtimeSignal;
+  if (process.env.RITMO_TEST_ABLY === '1') {
+    check(
+      subscription.body.enabled,
+      'Live Ably testing requires ABLY_API_KEY in .dev.vars.',
+    );
+    const { Realtime } = await import('ably');
+    realtimeClient = new Realtime({
+      token: subscription.body.token,
+      transports: ['web_socket'],
+      logLevel: 0,
+    });
+    const channel = realtimeClient.channels.get(subscription.body.channel);
+    await channel.attach();
+    realtimeSignal = new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('No WebSocket invalidation received.')),
+        15000,
+      );
+      channel.subscribe('changed', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
   check(
     (
       await request(eventPath, {
@@ -319,6 +391,14 @@ try {
     ).status === 200,
     'Guests must be able to request a song without an account.',
   );
+  if (realtimeSignal) {
+    await realtimeSignal;
+    check(
+      true,
+      'A saved song request must push an invalidation over a real Ably WebSocket.',
+    );
+    realtimeClient.close();
+  }
   check(
     (await request(eventPath, { cookie: first.cookie })).body.requests
       .length === 1,
@@ -463,6 +543,16 @@ try {
     'DJs must not see another account’s events.',
   );
   const otherView = await request(eventPath, { cookie: second.cookie });
+  check(
+    (
+      await request(realtimePath, {
+        method: 'POST',
+        cookie: second.cookie,
+        body: {},
+      })
+    ).status === 403,
+    'Another DJ cannot subscribe to private event changes.',
+  );
   check(
     !Object.hasOwn(otherView.body, 'tipOpenCount'),
     'Another DJ cannot read tip-link totals.',
@@ -942,6 +1032,7 @@ try {
   );
   console.log(`Auth integration: ${assertions} checks passed.`);
 } finally {
+  realtimeClient?.close();
   const sqlPath = new URL(
     '../../.wrangler/auth-test-cleanup.sql',
     import.meta.url,

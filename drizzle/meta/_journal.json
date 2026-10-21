@@ -43,6 +43,13 @@
       "when": 1792596052675,
       "tag": "0005_track-tip-openings",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792608914246,
+      "tag": "0006_add-realtime-retry",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,22 @@
 import { getDJUser, isSameOrigin } from '@/server/auth/session';
 import { apiResponse, HttpError, jsonBody } from '@/server/http';
 import * as service from './service';
+import { eventSubscription as subscription } from '@/server/realtime/events';
 
 type EventContext = { params: Promise<{ id: string }> };
 function requireOrigin(request: Request) {
   if (!isSameOrigin(request)) throw new HttpError(403, 'Origen no permitido.');
+}
+
+export function eventSubscription(request: Request, context: EventContext) {
+  return apiResponse(async () => {
+    requireOrigin(request);
+    const user = await getDJUser();
+    if (!user) throw new HttpError(401, 'Inicia sesión para abrir tu cabina.');
+    const { id } = await context.params;
+    const event = await service.requireEventOwner(id, user.userId);
+    return subscription(id, event.realtimeRetryAfter);
+  });
 }
 
 export function listEvents(request: Request) {

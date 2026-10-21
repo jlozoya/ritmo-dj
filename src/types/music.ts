@@ -39,6 +39,7 @@ export type EventSummary = Pick<
 export type EventDetail = PublicEvent & {
   owner: boolean;
   tipOpenCount?: number;
+  realtimeAvailable?: boolean;
   requests: SongRequest[];
 };
 export type DJUser = { name: string; email: string };

@@ -52,6 +52,7 @@ Se configuran con las herramientas de variables de entorno de Sites:
 | `SPOTIFY_CLIENT_SECRET` | Secreto  | Autenticación del catálogo de Spotify     |
 | `BETTER_AUTH_SECRET`    | Secreto  | Firma de las sesiones de DJ               |
 | `BETTER_AUTH_URL`       | Variable | Origen HTTPS exacto del sitio publicado   |
+| `ABLY_API_KEY`          | Secreto  | Avisos por WebSocket para la cabina       |
 
 Conserva los secretos existentes al actualizar. No regeneres `BETTER_AUTH_SECRET`
 en cada publicación: invalidaría las sesiones. Modifica las credenciales de

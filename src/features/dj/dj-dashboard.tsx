@@ -23,6 +23,8 @@ import type { EventDetail, EventSummary, RequestStatus } from '@/types/music';
 import { DJPanel } from './components/dashboard-panel';
 import { ArchivedEventsDialog } from './components/archived-events-dialog';
 import { EventDeleteDialog } from './components/event-delete-dialog';
+import { startEventSync, type EventSyncMode } from './lib/event-sync';
+import { subscribeToEvent } from './lib/ably-subscription';
 
 export function DJDashboard({
   user,
@@ -44,6 +46,7 @@ export function DJDashboard({
   const [toast, setToast] = useState('');
   const [sound, setSound] = useState(false);
   const [lastSync, setLastSync] = useState(false);
+  const [syncMode, setSyncMode] = useState<EventSyncMode>('polling');
   const [updatingRequests, setUpdatingRequests] = useState<string[]>([]);
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [archivedEvents, setArchivedEvents] = useState<EventSummary[]>([]);
@@ -70,6 +73,9 @@ export function DJDashboard({
     async (id: string) => {
       const detail = await api<EventDetail>(
         `/api/event/${encodeURIComponent(id)}`,
+        undefined,
+        'GET',
+        AbortSignal.timeout(12000),
       );
       if (activeIdRef.current !== id) return;
       if (!detail.owner) throw new Error('No tienes acceso a este evento.');
@@ -112,6 +118,7 @@ export function DJDashboard({
           }
         }
       }
+      return detail.realtimeAvailable !== false;
     },
     [notify],
   );
@@ -139,20 +146,25 @@ export function DJDashboard({
   useEffect(() => {
     if (!activeId) return;
     seen.current = null;
-    let cancelled = false;
-    const tick = () =>
-      refresh(activeId).catch((e) => {
-        if (!cancelled && activeIdRef.current === activeId) {
+    const sync = startEventSync({
+      refresh: () => refresh(activeId),
+      onMode: setSyncMode,
+      onError: (e) => {
+        if (activeIdRef.current === activeId) {
           setLastSync(false);
           setError((e as Error).message);
           onSessionCheck();
         }
-      });
-    tick();
-    const timer = window.setInterval(tick, 3000);
+      },
+    });
+    const unsubscribe = subscribeToEvent(
+      activeId,
+      sync.changed,
+      sync.connected,
+    );
     return () => {
-      cancelled = true;
-      window.clearInterval(timer);
+      sync.stop();
+      unsubscribe();
     };
   }, [activeId, refresh, onSessionCheck]);
 
@@ -326,6 +338,7 @@ export function DJDashboard({
         busy={loading || Boolean(activeId && !event && !error)}
         error={error}
         lastSync={lastSync}
+        syncMode={syncMode}
         sound={sound}
         updatingRequests={updatingRequests}
         onNewEvent={() => {

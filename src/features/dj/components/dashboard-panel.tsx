@@ -31,6 +31,7 @@ import { SharingCard } from './sharing-card';
 import { SongCard } from './song-card';
 import { TipSettings } from '@/features/tips/components/tip-settings';
 import { EventOptions } from './event-options';
+import type { EventSyncMode } from '../lib/event-sync';
 
 export function DJPanel({
   user,
@@ -40,6 +41,7 @@ export function DJPanel({
   busy,
   error,
   lastSync,
+  syncMode,
   sound,
   onNewEvent,
   onSelect,
@@ -61,6 +63,7 @@ export function DJPanel({
   busy: boolean;
   error: string;
   lastSync: boolean;
+  syncMode: EventSyncMode;
   sound: boolean;
   onNewEvent: () => void;
   onSelect: (id: string) => void;
@@ -303,7 +306,9 @@ export function DJPanel({
               <div className="queue-footer">
                 <span className={`live-dot ${lastSync ? '' : 'offline'}`} />
                 {lastSync
-                  ? 'Actualización automática cada 3 s'
+                  ? syncMode === 'realtime'
+                    ? 'En vivo'
+                    : 'Actualización de respaldo cada 3 s'
                   : 'Esperando conexión'}
               </div>
             </section>

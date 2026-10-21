@@ -13,6 +13,7 @@ import { HttpError } from '@/server/http';
 import { spotifyArtwork } from '@/server/spotify/artwork';
 import { parseTipLink } from '@/features/tips/lib/tip-link';
 import type { RequestStatus } from '@/types/music';
+import { notifyEventChange, realtimeAvailable } from '@/server/realtime/events';
 
 export function listEvents(owner: string, archived = false) {
   return getDb()
@@ -45,6 +46,12 @@ export async function createEvent(
 
 async function findEvent(id: string) {
   const [event] = await getDb().select().from(events).where(eq(events.id, id));
+  return event;
+}
+
+export async function requireEventOwner(id: string, userId: string) {
+  const event = await findEvent(id);
+  if (!event || event.owner !== userId) throw new HttpError(403, 'Sin acceso');
   return event;
 }
 
@@ -103,6 +110,9 @@ export async function getEvent(id: string, userId?: string) {
     tipUrl: event.archived && !owner ? null : event.tipUrl,
     owner,
     ...(owner ? { tipOpenCount: tipTotal?.total || 0 } : {}),
+    ...(owner
+      ? { realtimeAvailable: realtimeAvailable(event.realtimeRetryAfter) }
+      : {}),
     requests: rows,
   };
 }
@@ -132,6 +142,7 @@ export async function recordTipClick(
       created: new Date().toISOString(),
     })
     .onConflictDoNothing();
+  notifyEventChange(id);
   return { ok: true };
 }
 
@@ -161,6 +172,7 @@ export async function updateEvent(
       .update(events)
       .set({ archived: Number(body.archived), open: 0 })
       .where(eq(events.id, id));
+    notifyEventChange(id);
     return { ok: true };
   }
   if (event.archived)
@@ -192,6 +204,7 @@ export async function updateEvent(
   } else {
     throw new HttpError(400, 'Cambio inválido');
   }
+  notifyEventChange(id);
   return { ok: true };
 }
 
@@ -214,6 +227,7 @@ export async function deleteEvent(
       .delete(events)
       .where(and(eq(events.id, id), eq(events.owner, event.owner))),
   ]);
+  notifyEventChange(id);
   return { ok: true };
 }
 
@@ -270,5 +284,6 @@ export async function createSongRequest(
     status: 'pending',
     created: new Date().toISOString(),
   });
+  notifyEventChange(id);
   return { ok: true };
 }
