@@ -4,8 +4,13 @@ import { authClient } from '../lib/auth-client';
 import { DJAccessForm } from './access-form';
 import { DJDashboard } from '@/features/dj/dj-dashboard';
 import { LoadingState } from '@/components/loading-state';
+import { ProfilePage } from '@/features/profile/profile-page';
 
-export function DJSessionGate() {
+export function DJSessionGate({
+  view = 'dashboard',
+}: {
+  view?: 'dashboard' | 'profile';
+}) {
   const { data: session, isPending, error, refetch } = authClient.useSession();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -50,12 +55,20 @@ export function DJSessionGate() {
           {signOutError}
         </div>
       )}
-      <DJDashboard
-        key={session.user.id}
-        user={session.user}
-        onSignOut={signOut}
-        onSessionCheck={checkSession}
-      />
+      {view === 'profile' ? (
+        <ProfilePage
+          user={session.user}
+          onSignOut={signOut}
+          onSaved={checkSession}
+        />
+      ) : (
+        <DJDashboard
+          key={session.user.id}
+          user={session.user}
+          onSignOut={signOut}
+          onSessionCheck={checkSession}
+        />
+      )}
     </>
   );
 }

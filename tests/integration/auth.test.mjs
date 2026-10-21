@@ -137,6 +137,61 @@ try {
   );
   check(
     (
+      await request('/api/auth/update-user', {
+        method: 'POST',
+        body: { name: 'Intruder' },
+      })
+    ).status === 401,
+    'Profile changes require a session.',
+  );
+  check(
+    (
+      await request('/api/auth/update-user', {
+        method: 'POST',
+        cookie: first.cookie,
+        origin: 'https://untrusted.example',
+        body: { name: 'Intruder' },
+      })
+    ).status === 403,
+    'Cross-origin profile changes must be rejected.',
+  );
+  check(
+    (
+      await request('/api/auth/update-user', {
+        method: 'POST',
+        cookie: first.cookie,
+        body: { name: '   ' },
+      })
+    ).status === 400,
+    'Blank DJ names must be rejected on the server.',
+  );
+  check(
+    (
+      await request('/api/auth/update-user', {
+        method: 'POST',
+        cookie: first.cookie,
+        body: { name: '  DJ actualizado  ' },
+      })
+    ).status === 200,
+    'A DJ can update their own profile.',
+  );
+  check(
+    (await request('/api/auth/get-session', { cookie: first.cookie })).body.user
+      ?.name === 'DJ actualizado',
+    'The saved DJ name must be reflected in the session.',
+  );
+  check(
+    (
+      await request('/api/auth/update-user', {
+        method: 'POST',
+        cookie: first.cookie,
+        body: { email: 'different@example.test' },
+      })
+    ).status === 400,
+    'The profile endpoint must not silently replace the account email.',
+  );
+  check(
+    (
       await request('/api/auth/sign-up/email', {
         method: 'POST',
         body: { email: emails[0], password, name: 'Duplicate' },
@@ -167,6 +222,60 @@ try {
     'Cross-origin event mutations must be rejected.',
   );
   const eventPath = `/api/event/${event.body.id}`;
+  check(
+    (await request(eventPath)).body.tipUrl === null,
+    'New events must not advertise a payment recipient before configuration.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        body: { tipUrl: 'https://paypal.me/TestDJ' },
+      })
+    ).status === 403,
+    'Anonymous visitors cannot set a tip recipient.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        origin: 'https://untrusted.example',
+        body: { tipUrl: 'https://paypal.me/TestDJ' },
+      })
+    ).status === 403,
+    'Cross-origin changes to payment recipients must be rejected.',
+  );
+  for (const tipUrl of [
+    'javascript:alert(1)',
+    'https://paypal.me.evil.test/dj',
+    123,
+  ]) {
+    check(
+      (
+        await request(eventPath, {
+          method: 'PATCH',
+          cookie: first.cookie,
+          body: { tipUrl },
+        })
+      ).status === 400,
+      'Invalid payment links must be rejected by the server.',
+    );
+  }
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { tipUrl: 'https://www.paypal.me/TestDJ/?source=share' },
+      })
+    ).status === 200,
+    'An event owner can enable PayPal tips.',
+  );
+  check(
+    (await request(eventPath)).body.tipUrl === 'https://paypal.me/TestDJ',
+    'The public event must expose the validated payment link without authentication.',
+  );
   check(
     (await request(eventPath)).body.owner === false,
     'The public QR endpoint must remain accessible without a session.',
@@ -278,6 +387,48 @@ try {
       await request(eventPath, {
         method: 'PATCH',
         cookie: second.cookie,
+        body: { tipUrl: 'https://mpago.la/2WTWRHT' },
+      })
+    ).status === 403,
+    'Another DJ cannot replace the event payment recipient.',
+  );
+  check(
+    (await request(eventPath)).body.tipUrl === 'https://paypal.me/TestDJ',
+    'Rejected changes must preserve the original recipient.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { tipUrl: 'https://mpago.la/2WTWRHT' },
+      })
+    ).status === 200,
+    'The owner can switch to Mercado Pago.',
+  );
+  check(
+    (await request(eventPath)).body.tipUrl === 'https://mpago.la/2WTWRHT',
+    'The guest payment link must reflect the newly saved provider.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { tipUrl: null },
+      })
+    ).status === 200,
+    'The owner can disable tips.',
+  );
+  check(
+    (await request(eventPath)).body.tipUrl === null,
+    'Disabled tips must remove the public payment link.',
+  );
+  check(
+    (
+      await request(eventPath, {
+        method: 'PATCH',
+        cookie: second.cookie,
         body: { open: false },
       })
     ).status === 403,
@@ -344,6 +495,82 @@ try {
         'Repeated login attempts must be rate limited.',
       );
   }
+  const newPassword = `${password}-updated`;
+  const otherSession = await request('/api/auth/sign-in/email', {
+    method: 'POST',
+    ip: testIP(5),
+    body: { email: emails[0], password },
+  });
+  check(
+    otherSession.status === 200 && Boolean(otherSession.cookie),
+    'Password tests require a second session.',
+  );
+  check(
+    (
+      await request('/api/auth/change-password', {
+        method: 'POST',
+        cookie: login.cookie,
+        body: {
+          currentPassword: 'wrong-password',
+          newPassword,
+          revokeOtherSessions: true,
+        },
+      })
+    ).status === 400,
+    'Changing the password must verify the current password.',
+  );
+  check(
+    (
+      await request('/api/auth/change-password', {
+        method: 'POST',
+        cookie: login.cookie,
+        body: {
+          currentPassword: password,
+          newPassword: 'short',
+          revokeOtherSessions: true,
+        },
+      })
+    ).status === 400,
+    'Password updates must enforce the eight-character minimum on the server.',
+  );
+  const changed = await request('/api/auth/change-password', {
+    method: 'POST',
+    cookie: login.cookie,
+    body: { currentPassword: password, newPassword, revokeOtherSessions: true },
+  });
+  check(
+    changed.status === 200 && Boolean(changed.cookie),
+    'A successful password change must preserve the current device session.',
+  );
+  check(
+    (await request('/api/events', { cookie: changed.cookie })).status === 200,
+    'The current device must still have access after the password change.',
+  );
+  check(
+    (await request('/api/events', { cookie: otherSession.cookie })).status ===
+      401,
+    'Other device sessions must be revoked.',
+  );
+  check(
+    (
+      await request('/api/auth/sign-in/email', {
+        method: 'POST',
+        ip: testIP(6),
+        body: { email: emails[0], password },
+      })
+    ).status === 401,
+    'The old password must no longer work.',
+  );
+  check(
+    (
+      await request('/api/auth/sign-in/email', {
+        method: 'POST',
+        ip: testIP(6),
+        body: { email: emails[0], password: newPassword },
+      })
+    ).status === 200,
+    'The new password must allow sign-in.',
+  );
   console.log(`Auth integration: ${assertions} checks passed.`);
 } finally {
   const sqlPath = new URL(

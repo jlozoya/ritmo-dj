@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `tip_url` text;

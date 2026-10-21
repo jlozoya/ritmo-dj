@@ -11,8 +11,10 @@ src/
   features/
     auth/              Formularios, validación y cliente de sesión
     dj/                Cabina, lista de canciones y QR
+    profile/           Nombre del DJ, datos de la cuenta y cambio de contraseña
     requests/          Formulario público de peticiones
     spotify/           Búsqueda de canciones desde el navegador
+    tips/              Enlaces de propinas, validación y configuración por evento
   hooks/               Hooks compartidos
   lib/                 Cliente HTTP y utilidades de interfaz
   types/               Contratos compartidos de eventos y canciones

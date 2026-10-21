@@ -3,6 +3,7 @@ import { getDb } from '@/server/db';
 import { events, requests } from '@/server/db/schema';
 import { HttpError } from '@/server/http';
 import { spotifyArtwork } from '@/server/spotify/artwork';
+import { parseTipLink } from '@/features/tips/lib/tip-link';
 import type { RequestStatus } from '@/types/music';
 
 export function listEvents(owner: string) {
@@ -26,6 +27,7 @@ export async function createEvent(
     owner,
     name,
     open: 1,
+    tipUrl: null,
     created: new Date().toISOString(),
   };
   await getDb().insert(events).values(event);
@@ -70,6 +72,7 @@ export async function getEvent(id: string, userId?: string) {
     id: event.id,
     name: event.name,
     open: event.open,
+    tipUrl: event.tipUrl,
     owner,
     requests: rows,
   };
@@ -96,7 +99,21 @@ export async function updateEvent(
   const event = await findEvent(id);
   if (!event || userId !== event.owner) throw new HttpError(403, 'Sin acceso');
   const db = getDb();
-  if (typeof body.open === 'boolean') {
+  if (Object.hasOwn(body, 'tipUrl')) {
+    if (body.tipUrl !== null && typeof body.tipUrl !== 'string')
+      throw new HttpError(400, 'El enlace de propinas no es válido.');
+    const value = typeof body.tipUrl === 'string' ? body.tipUrl.trim() : '';
+    const link = value ? parseTipLink(value) : null;
+    if (value && !link)
+      throw new HttpError(
+        400,
+        'Usa un enlace HTTPS de PayPal.Me o Mercado Pago.',
+      );
+    await db
+      .update(events)
+      .set({ tipUrl: link?.url || null })
+      .where(eq(events.id, id));
+  } else if (typeof body.open === 'boolean') {
     await db
       .update(events)
       .set({ open: body.open ? 1 : 0 })

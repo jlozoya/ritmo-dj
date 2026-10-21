@@ -5,6 +5,7 @@ export interface PublicEvent {
   id: string;
   name: string;
   open: number;
+  tipUrl: string | null;
 }
 
 export interface SongRequest {

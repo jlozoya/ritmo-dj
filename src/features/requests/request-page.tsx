@@ -26,6 +26,7 @@ import type { EventDetail, SpotifyTrack } from '@/types/music';
 import { useTrackSearch } from '@/features/spotify/hooks/use-track-search';
 import { SelectedTrack } from './components/selected-track';
 import { createClientId } from './lib/client-id';
+import { GuestTipCard } from '@/features/tips/components/guest-tip-card';
 
 type RequestForm = {
   guest: string;
@@ -318,6 +319,7 @@ export function RequestPage({ eventId }: { eventId: string }) {
               </p>
             </form>
           )}
+          {event && !loading && <GuestTipCard tipUrl={event.tipUrl} />}
         </main>
       </div>
     </div>

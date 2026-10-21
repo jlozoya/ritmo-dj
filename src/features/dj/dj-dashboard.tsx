@@ -207,6 +207,15 @@ export function DJDashboard({
     }
   }
 
+  async function saveTipLink(tipUrl: string | null) {
+    if (!event) throw new Error('Selecciona un evento.');
+    const id = event.id;
+    await api(`/api/event/${encodeURIComponent(id)}`, { tipUrl }, 'PATCH');
+    setEvent((current) =>
+      current?.id === id ? { ...current, tipUrl } : current,
+    );
+  }
+
   return (
     <>
       <DJPanel
@@ -225,6 +234,7 @@ export function DJDashboard({
         }}
         onSelect={selectEvent}
         onUpdate={updateEvent}
+        onSaveTipLink={saveTipLink}
         onAlerts={() => {
           alerts().catch(() => notify('No se pudieron activar los avisos.'));
         }}

@@ -15,11 +15,7 @@ import {
 } from 'react-aria-components';
 import {
   ArrowUpRight,
-  AudioLines,
-  Check,
-  Headphones,
   Link2,
-  LogOut,
   Music2,
   Pause,
   Play,
@@ -27,12 +23,13 @@ import {
   Volume2,
   X,
 } from 'lucide-react';
-import { Brand } from '@/components/brand';
+import { DJLayout } from '@/components/dj-layout';
 import { LoadingState } from '@/components/loading-state';
 import type { EventDetail, EventSummary, RequestStatus } from '@/types/music';
 import { statuses, labels } from '../request-status';
 import { SharingCard } from './sharing-card';
 import { SongCard } from './song-card';
+import { TipSettings } from '@/features/tips/components/tip-settings';
 
 export function DJPanel({
   user,
@@ -50,6 +47,7 @@ export function DJPanel({
   onDismissError,
   onToast,
   updatingRequests = [],
+  onSaveTipLink,
 }: {
   user: { name: string; email: string };
   onSignOut: () => void;
@@ -70,11 +68,11 @@ export function DJPanel({
   onDismissError: () => void;
   onToast: (message: string) => void;
   updatingRequests?: string[];
+  onSaveTipLink: (url: string | null) => Promise<void>;
 }) {
   const [filter, setFilter] = useState<RequestStatus>('pending');
   const rows = event?.requests || [];
   const pending = rows.filter((song) => song.status === 'pending').length;
-  const played = rows.filter((song) => song.status === 'played').length;
 
   function share() {
     if (!event) return;
@@ -89,263 +87,216 @@ export function DJPanel({
   }
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <Brand />
-        <div className="sidebar-bottom">
-          <div className="profile">
-            <div className="avatar">DJ</div>
-            <span>
-              {user.name}
-              <small>{user.email}</small>
-            </span>
-            <Headphones size={18} />
+    <DJLayout
+      user={user}
+      onSignOut={onSignOut}
+      active="dashboard"
+      status={
+        <>
+          <span className="live-dot" />
+          {event?.open
+            ? 'Peticiones abiertas'
+            : event
+              ? 'Peticiones pausadas'
+              : 'Sin evento'}
+        </>
+      }
+    >
+      <main>
+        <div className="title-row">
+          <div>
+            <h1>Cabina</h1>
           </div>
+          <Button className="outline new-event-button" onPress={onNewEvent}>
+            <Plus size={18} />
+            Nuevo evento
+          </Button>
         </div>
-      </aside>
-      <div className="main-shell">
-        <header>
-          <div className="header-right">
-            <span className="live-dot" />{' '}
-            {event?.open
-              ? 'Peticiones abiertas'
-              : event
-                ? 'Peticiones pausadas'
-                : 'Sin evento'}{' '}
-            <Button className="outline sign-out" onPress={onSignOut}>
-              <LogOut size={15} />
-              Cerrar sesión
+        {error && (
+          <div className="error" role="alert">
+            {error}
+            <Button aria-label="Cerrar aviso" onPress={onDismissError}>
+              <X size={17} />
             </Button>
           </div>
-        </header>
-        <main>
-          <div className="title-row">
-            <div>
-              <h1>Cabina</h1>
-            </div>
-            <Button className="primary" onPress={onNewEvent}>
-              <Plus size={18} />
-              Nuevo evento
-            </Button>
-          </div>
-          {error && (
-            <div className="error" role="alert">
-              {error}
-              <Button aria-label="Cerrar aviso" onPress={onDismissError}>
-                <X size={17} />
+        )}
+        <section className="event-toolbar" aria-label="Evento activo">
+          {events.length > 1 ? (
+            <Select
+              className="event-select"
+              selectedKey={event?.id || null}
+              onSelectionChange={(key) => onSelect(String(key))}
+            >
+              <Label>Cambiar evento</Label>
+              <Button className="event-select-trigger">
+                <SelectValue /> <span aria-hidden="true">▾</span>
               </Button>
-            </div>
-          )}
-          <section className="event-banner">
-            <div className="banner-copy">
-              <h2>
-                {event?.name ||
-                  (events.length
-                    ? 'No hay un evento seleccionado'
-                    : 'No tienes eventos')}
-              </h2>
-              <div className="banner-actions">
-                {event ? (
-                  <>
-                    <Button className="light-button" onPress={share}>
-                      <Link2 size={16} />
-                      Compartir enlace <ArrowUpRight size={16} />
-                    </Button>
-                    <Button
-                      className="ghost"
-                      onPress={() => onUpdate({ open: !event.open })}
+              <Popover className="event-select-popover">
+                <ListBox items={events}>
+                  {(item) => (
+                    <ListBoxItem
+                      className="event-option"
+                      id={item.id}
+                      textValue={item.name}
                     >
-                      {event.open ? <Pause size={15} /> : <Play size={15} />}
-                      {event.open ? 'Pausar peticiones' : 'Abrir peticiones'}
-                    </Button>
-                  </>
-                ) : (
-                  <Button className="light-button" onPress={onNewEvent}>
-                    Crear evento <ArrowUpRight size={16} />
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="record-art" aria-hidden="true">
-              <div className="record">
-                <div className="record-label">
-                  <AudioLines size={40} />
-                </div>
-              </div>
-            </div>
-          </section>
-          {event && (
-            <div className="stats">
-              <div>
-                <span className="stat-icon purple">
-                  <Music2 size={20} />
-                </span>
-                <div>
-                  <span>Peticiones recibidas</span>
-                  <strong>{rows.length.toString().padStart(2, '0')}</strong>
-                </div>
-              </div>
-              <div>
-                <span className="stat-icon amber">
-                  <Headphones size={20} />
-                </span>
-                <div>
-                  <span>Por revisar</span>
-                  <strong>{pending.toString().padStart(2, '0')}</strong>
-                </div>
-              </div>
-              <div>
-                <span className="stat-icon green">
-                  <Check size={20} />
-                </span>
-                <div>
-                  <span>Tocadas</span>
-                  <strong>{played.toString().padStart(2, '0')}</strong>
-                </div>
-              </div>
-            </div>
+                      {item.name}
+                    </ListBoxItem>
+                  )}
+                </ListBox>
+              </Popover>
+            </Select>
+          ) : (
+            <h2>
+              {event?.name ||
+                (busy ? 'Cargando eventos…' : 'No tienes eventos')}
+            </h2>
           )}
-          {(event || busy || events.length > 0) && (
-            <div className="content-grid">
-              <section className="queue" aria-label="Solicitudes de canciones">
-                <div className="section-title">
-                  <h2>
-                    Peticiones <span>{rows.length}</span>
-                  </h2>
-                  <Button
-                    className={`alert-btn${sound ? ' enabled' : ''}`}
-                    onPress={onAlerts}
-                  >
-                    <Volume2 size={16} />
-                    {sound ? 'Avisos activos' : 'Activar avisos'}
-                  </Button>
-                </div>
-                <Tabs
-                  selectedKey={filter}
-                  onSelectionChange={(key) => setFilter(key as RequestStatus)}
-                  aria-label="Estado de las peticiones"
+          <div className="event-toolbar-actions">
+            {event ? (
+              <>
+                <Button className="outline" onPress={share}>
+                  <Link2 size={15} />
+                  Compartir enlace
+                </Button>
+                <Button
+                  className="outline"
+                  onPress={() => onUpdate({ open: !event.open })}
                 >
-                  <TabList className="tabs" aria-label="Filtrar solicitudes">
-                    {statuses.map((status) => (
-                      <Tab className="queue-tab" id={status} key={status}>
-                        {labels[status]}{' '}
-                        <span>
-                          {rows.filter((song) => song.status === status).length}
-                        </span>
-                      </Tab>
-                    ))}
-                  </TabList>
+                  {event.open ? <Pause size={15} /> : <Play size={15} />}
+                  {event.open ? 'Pausar peticiones' : 'Abrir peticiones'}
+                </Button>
+              </>
+            ) : (
+              !busy && (
+                <Button className="outline" onPress={onNewEvent}>
+                  Crear evento <Plus size={15} />
+                </Button>
+              )
+            )}
+          </div>
+        </section>
+        {(event || busy || events.length > 0) && (
+          <div className="content-grid">
+            <section className="queue" aria-label="Solicitudes de canciones">
+              <div className="section-title">
+                <h2>
+                  Peticiones <span>{rows.length}</span>
+                </h2>
+                <Button
+                  className={`alert-btn${sound ? ' enabled' : ''}`}
+                  onPress={onAlerts}
+                >
+                  <Volume2 size={16} />
+                  {sound ? 'Avisos activos' : 'Activar avisos'}
+                </Button>
+              </div>
+              <Tabs
+                selectedKey={filter}
+                onSelectionChange={(key) => setFilter(key as RequestStatus)}
+                aria-label="Estado de las peticiones"
+              >
+                <TabList className="tabs" aria-label="Filtrar solicitudes">
                   {statuses.map((status) => (
-                    <TabPanel id={status} key={status} className="queue-panel">
-                      {!event ? (
-                        busy ? (
-                          <LoadingState message="Cargando eventos…" />
-                        ) : (
-                          <div className="empty">
-                            No se pudo cargar el evento.
-                          </div>
-                        )
-                      ) : rows.filter((song) => song.status === status)
-                          .length === 0 ? (
+                    <Tab className="queue-tab" id={status} key={status}>
+                      {labels[status]}{' '}
+                      <span>
+                        {rows.filter((song) => song.status === status).length}
+                      </span>
+                    </Tab>
+                  ))}
+                </TabList>
+                {statuses.map((status) => (
+                  <TabPanel id={status} key={status} className="queue-panel">
+                    {!event ? (
+                      busy ? (
+                        <LoadingState message="Cargando eventos…" />
+                      ) : (
                         <div className="empty">
-                          <div className="empty-disc">
-                            <Music2 size={29} />
-                          </div>
-                          <h3>
-                            {status === 'pending'
-                              ? 'No hay peticiones pendientes'
-                              : status === 'accepted'
-                                ? 'No hay canciones aceptadas'
-                                : status === 'played'
-                                  ? 'No hay canciones marcadas como tocadas'
-                                  : 'No hay peticiones descartadas'}
-                          </h3>
-                          {event &&
-                            status === 'pending' &&
-                            rows.length === 0 &&
-                            Boolean(event.open) && (
-                              <>
-                                <p>
-                                  Comparte el enlace del evento para recibir
-                                  peticiones.
-                                </p>
-                                <Button className="text-button" onPress={share}>
-                                  Copiar enlace <ArrowUpRight size={15} />
-                                </Button>
-                              </>
-                            )}
-                          {status === 'accepted' && pending > 0 && (
+                          No se pudo cargar el evento.
+                        </div>
+                      )
+                    ) : rows.filter((song) => song.status === status).length ===
+                      0 ? (
+                      <div className="empty">
+                        <div className="empty-disc">
+                          <Music2 size={29} />
+                        </div>
+                        <h3>
+                          {status === 'pending'
+                            ? 'No hay peticiones pendientes'
+                            : status === 'accepted'
+                              ? 'No hay canciones aceptadas'
+                              : status === 'played'
+                                ? 'No hay canciones marcadas como tocadas'
+                                : 'No hay peticiones descartadas'}
+                        </h3>
+                        {event &&
+                          status === 'pending' &&
+                          rows.length === 0 &&
+                          Boolean(event.open) && (
+                            <>
+                              <p>
+                                Comparte el enlace del evento para recibir
+                                peticiones.
+                              </p>
+                              <Button className="text-button" onPress={share}>
+                                Copiar enlace <ArrowUpRight size={15} />
+                              </Button>
+                            </>
+                          )}
+                        {status === 'accepted' && pending > 0 && (
+                          <p>
+                            Acepta canciones desde la pestaña «Por revisar».
+                          </p>
+                        )}
+                        {status === 'played' &&
+                          rows.some((song) => song.status === 'accepted') && (
                             <p>
-                              Acepta canciones desde la pestaña «Por revisar».
+                              Después de tocar una canción, márcala como tocada
+                              desde «En la lista».
                             </p>
                           )}
-                          {status === 'played' &&
-                            rows.some((song) => song.status === 'accepted') && (
-                              <p>
-                                Después de tocar una canción, márcala como
-                                tocada desde «En la lista».
-                              </p>
-                            )}
-                        </div>
-                      ) : (
-                        <div className="song-list">
-                          {rows
-                            .filter((song) => song.status === status)
-                            .map((song, i) => (
-                              <SongCard
-                                key={song.id}
-                                song={song}
-                                index={i}
-                                isUpdating={updatingRequests.includes(song.id)}
-                                onUpdate={(id, state) =>
-                                  onUpdate({ requestId: id, status: state })
-                                }
-                              />
-                            ))}
-                        </div>
-                      )}
-                    </TabPanel>
-                  ))}
-                </Tabs>
-                <div className="queue-footer">
-                  <span className={`live-dot ${lastSync ? '' : 'offline'}`} />
-                  {lastSync
-                    ? 'Actualización automática cada 3 s'
-                    : 'Esperando conexión'}
-                </div>
-              </section>
-              <aside className="right-column">
-                <SharingCard event={event} onToast={onToast} />
-                {events.length > 1 && (
-                  <Select
-                    className="event-select"
-                    selectedKey={event?.id || null}
-                    onSelectionChange={(key) => onSelect(String(key))}
-                  >
-                    <Label>Cambiar evento</Label>
-                    <Button className="event-select-trigger">
-                      <SelectValue /> <span aria-hidden="true">▾</span>
-                    </Button>
-                    <Popover className="event-select-popover">
-                      <ListBox items={events}>
-                        {(item) => (
-                          <ListBoxItem
-                            className="event-option"
-                            id={item.id}
-                            textValue={item.name}
-                          >
-                            {item.name}
-                          </ListBoxItem>
-                        )}
-                      </ListBox>
-                    </Popover>
-                  </Select>
-                )}
-              </aside>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
+                      </div>
+                    ) : (
+                      <div className="song-list">
+                        {rows
+                          .filter((song) => song.status === status)
+                          .map((song, i) => (
+                            <SongCard
+                              key={song.id}
+                              song={song}
+                              index={i}
+                              isUpdating={updatingRequests.includes(song.id)}
+                              onUpdate={(id, state) =>
+                                onUpdate({ requestId: id, status: state })
+                              }
+                            />
+                          ))}
+                      </div>
+                    )}
+                  </TabPanel>
+                ))}
+              </Tabs>
+              <div className="queue-footer">
+                <span className={`live-dot ${lastSync ? '' : 'offline'}`} />
+                {lastSync
+                  ? 'Actualización automática cada 3 s'
+                  : 'Esperando conexión'}
+              </div>
+            </section>
+            <aside className="right-column">
+              <SharingCard event={event} onToast={onToast} />
+              {event && (
+                <TipSettings
+                  key={event.id}
+                  tipUrl={event.tipUrl}
+                  onSave={onSaveTipLink}
+                />
+              )}
+            </aside>
+          </div>
+        )}
+      </main>
+    </DJLayout>
   );
 }

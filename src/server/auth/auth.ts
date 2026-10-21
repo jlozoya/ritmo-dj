@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth/minimal';
+import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { env } from 'cloudflare:workers';
 import { getDb } from '@/server/db';
@@ -41,6 +42,24 @@ export function getAuth() {
       enabled: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
+    },
+    databaseHooks: {
+      user: {
+        update: {
+          before: async (user) => {
+            if (user.name === undefined) return { data: user };
+            if (
+              typeof user.name !== 'string' ||
+              !user.name.trim() ||
+              user.name.trim().length > 80
+            )
+              throw new APIError('BAD_REQUEST', {
+                message: 'Escribe un nombre de DJ de entre 1 y 80 caracteres.',
+              });
+            return { data: { ...user, name: user.name.trim() } };
+          },
+        },
+      },
     },
     session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     rateLimit: {

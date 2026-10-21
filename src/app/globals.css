@@ -565,8 +565,7 @@ main {
   margin: 15px 0 12px;
   letter-spacing: -0.6px;
 }
-.share-card p,
-.tip-card p {
+.share-card p {
   font-size: 11px;
   color: #8e8d9e;
   line-height: 1.9;
@@ -599,23 +598,6 @@ main {
   color: #8e839e;
   font-size: 10px;
   margin-top: 15px;
-}
-.tip-card {
-  margin-top: 17px;
-  border: 1px solid #2b2d30;
-  border-radius: 10px;
-  background: #171a1b;
-  padding: 19px 20px;
-}
-.tip-card > div {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #bdcabb;
-  margin-bottom: 9px;
-}
-.tip-card strong {
-  font-size: 12px;
 }
 .event-select {
   display: block;
@@ -1108,16 +1090,12 @@ textarea {
     margin-left: 77px;
   }
   .content-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .right-column {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-  }
-  .tip-card {
-    margin: 0;
-    align-self: start;
   }
   .title-row h1 {
     font-size: 30px;
@@ -1298,9 +1276,6 @@ textarea {
   }
   .share-card h2 br {
     display: none;
-  }
-  .tip-card {
-    margin-top: 15px;
   }
   footer {
     font-size: 7px;
@@ -1905,6 +1880,350 @@ button,
 }
 .sidebar > .brand {
   margin-bottom: 28px;
+}
+.workspace-nav {
+  display: grid;
+  gap: 8px;
+}
+.workspace-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+.workspace-nav a[aria-current='page'] {
+  background: #c2a4ff12;
+  color: var(--accent);
+}
+.workspace-app .workspace-header {
+  height: 62px;
+  justify-content: flex-end;
+}
+.workspace-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-mobile-nav {
+  display: none;
+}
+.workspace-app main {
+  padding-top: 24px;
+}
+.workspace-app .title-row {
+  margin-bottom: 18px;
+}
+.workspace-app .title-row h1 {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+}
+.workspace-app .new-event-button {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 9px 12px;
+}
+.workspace-app .right-column {
+  min-width: 0;
+}
+.workspace-app .queue .tabs {
+  overflow-x: auto;
+}
+.event-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 68px;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.event-toolbar h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  overflow-wrap: anywhere;
+}
+.event-toolbar .event-select {
+  position: static;
+  margin: 0;
+  min-width: 0;
+  max-width: 360px;
+}
+.event-toolbar .event-select label {
+  margin: 0 0 5px;
+  font-size: 11px;
+}
+.event-toolbar .event-select-trigger {
+  margin: 0;
+}
+.event-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.event-toolbar-actions button {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.profile-main {
+  max-width: 1200px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.profile-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 24px;
+  min-width: 0;
+}
+.profile-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+.profile-card h2 svg {
+  color: var(--accent);
+}
+.profile-card .react-aria-TextField {
+  display: block;
+  margin-bottom: 22px;
+}
+.profile-card label {
+  font-size: 13px;
+}
+.profile-card [slot='description'] {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.profile-card input[readonly] {
+  color: var(--muted);
+  background: #14151a;
+}
+.profile-card .primary {
+  margin-top: 16px;
+}
+.password-visibility {
+  display: flex;
+  padding: 0;
+  color: var(--muted);
+  min-height: 36px;
+  font-size: 12px;
+}
+@media (max-width: 1000px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .workspace-nav a {
+    justify-content: center;
+    padding: 12px 0;
+  }
+  .workspace-nav a span {
+    display: none;
+  }
+  .workspace-mobile-nav {
+    display: flex;
+    gap: 16px;
+    margin-right: auto;
+    font-size: 13px;
+  }
+  .workspace-mobile-nav a[aria-current='page'] {
+    color: var(--accent);
+  }
+}
+@media (max-width: 600px) {
+  .workspace-app .workspace-header {
+    height: 56px;
+  }
+  .workspace-status {
+    display: none;
+  }
+  .workspace-app .queue .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 0 10px;
+    overflow: visible;
+    white-space: normal;
+  }
+  .workspace-app .tabs .queue-tab {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 11px;
+    text-align: center;
+    padding: 12px 0;
+  }
+  .event-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .event-toolbar-actions {
+    flex-wrap: wrap;
+  }
+  .event-toolbar-actions button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .profile-card {
+    padding: 20px;
+  }
+}
+.tip-settings,
+.guest-tip-card {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  min-width: 0;
+}
+.tip-settings {
+  margin-top: 18px;
+  align-self: start;
+}
+.tip-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tip-heading > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.tip-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.tip-enabled {
+  margin-left: auto;
+  color: #a8dfbd;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #a8dfbd12;
+}
+.tip-settings form {
+  margin-top: 22px;
+}
+.tip-settings label {
+  font-size: 12px;
+  display: block;
+}
+.tip-settings input {
+  font-size: 12px;
+}
+.tip-settings [slot='description'] {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 10px;
+}
+.tip-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.tip-settings-actions button {
+  min-height: 42px;
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tip-error,
+.tip-saved {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 10px;
+}
+.tip-error {
+  color: #ffb4b4;
+}
+.tip-saved {
+  color: #a8dfbd;
+}
+.tip-help-links {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.tip-provider-link,
+.tip-help-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  line-height: 1.5;
+}
+.tip-provider-link {
+  margin-top: 16px;
+}
+.guest-tip-card {
+  margin-top: 20px;
+  margin-bottom: 32px;
+  background: linear-gradient(110deg, #191620, #15161c);
+  border-color: #3a3049;
+}
+.guest-tip-card .tip-heading {
+  gap: 13px;
+}
+.guest-tip-card h2 {
+  font-size: 17px;
+}
+.guest-tip-card p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.tip-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #c2a4ff12;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.tip-pay-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 18px;
+  min-height: 46px;
+  padding: 12px 16px;
+  border: 1px solid #796490;
+  border-radius: 8px;
+  color: #dac8fa;
+  font-weight: 600;
+}
+.tip-pay-link:hover {
+  background: #c2a4ff0d;
+  border-color: var(--accent);
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .tip-settings {
+    margin-top: 0;
+  }
 }
 @media (max-width: 600px) {
   .auth-main {
