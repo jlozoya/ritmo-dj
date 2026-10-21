@@ -14,8 +14,10 @@ import {
   Modal,
   ModalOverlay,
   TextField,
+  Text,
 } from 'react-aria-components';
-import { ArrowUpRight, Bell, X } from 'lucide-react';
+import { ArrowUpRight, Bell, CalendarDays, X } from 'lucide-react';
+import { FieldInput } from '@/components/field-input';
 import { api } from '@/lib/http';
 import type { EventDetail, EventSummary, RequestStatus } from '@/types/music';
 import { DJPanel } from './components/dashboard-panel';
@@ -274,10 +276,17 @@ export function DJDashboard({
                   autoFocus
                 >
                   <Label>Nombre del evento</Label>
-                  <Input
-                    maxLength={80}
-                    placeholder="Ej. Sábado en la terraza"
-                  />
+                  <FieldInput icon={CalendarDays}>
+                    <Input
+                      name="event-name"
+                      autoComplete="off"
+                      maxLength={80}
+                      placeholder="Ej. Sábado en la terraza"
+                    />
+                  </FieldInput>
+                  <Text slot="description" className="field-help">
+                    Este nombre se muestra al abrir el QR del evento.
+                  </Text>
                 </TextField>
                 {error && (
                   <p className="error" role="alert">

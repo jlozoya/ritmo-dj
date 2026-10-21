@@ -6,9 +6,19 @@ import {
   FieldError,
   Input,
   Label,
+  Text,
   TextField,
 } from 'react-aria-components';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
+import { FieldInput } from '@/components/field-input';
 import { authClient } from '@/features/auth/lib/auth-client';
 import { parseAccessForm, type AccessErrors } from '../lib/access-form';
 import { Brand } from '@/components/brand';
@@ -137,8 +147,15 @@ export function DJAccessForm({
               validationBehavior="aria"
               isInvalid={Boolean(fieldErrors.name)}
             >
-              <Label>Nombre</Label>
-              <Input name="name" autoComplete="name" maxLength={80} />
+              <Label>Nombre del DJ</Label>
+              <FieldInput icon={UserRound}>
+                <Input
+                  name="name"
+                  autoComplete="nickname"
+                  maxLength={80}
+                  placeholder="Ej. DJ Fernando"
+                />
+              </FieldInput>
               <FieldError>{fieldErrors.name}</FieldError>
             </TextField>
           )}
@@ -152,7 +169,17 @@ export function DJAccessForm({
             isInvalid={Boolean(fieldErrors.email)}
           >
             <Label>Correo electrónico</Label>
-            <Input name="email" autoComplete="email" maxLength={254} />
+            <FieldInput icon={Mail}>
+              <Input
+                name="email"
+                autoComplete={register ? 'email' : 'username'}
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={254}
+                placeholder="tu@correo.com"
+              />
+            </FieldInput>
             <FieldError>{fieldErrors.email}</FieldError>
           </TextField>
           <TextField
@@ -165,17 +192,12 @@ export function DJAccessForm({
             isInvalid={Boolean(fieldErrors.password)}
           >
             <Label>Contraseña</Label>
-            <div className="password-field">
+            <FieldInput icon={LockKeyhole} className="password-field">
               <Input
                 name="password"
                 autoComplete={register ? 'new-password' : 'current-password'}
                 minLength={register ? 8 : undefined}
                 maxLength={128}
-                aria-describedby={
-                  register && !fieldErrors.password
-                    ? 'password-hint'
-                    : undefined
-                }
               />
               <Button
                 className="password-toggle"
@@ -187,11 +209,11 @@ export function DJAccessForm({
               >
                 {visible ? <EyeOff size={18} /> : <Eye size={18} />}
               </Button>
-            </div>
+            </FieldInput>
             {register && !fieldErrors.password && (
-              <p className="search-hint" id="password-hint">
-                Al menos 8 caracteres.
-              </p>
+              <Text className="field-help" slot="description">
+                Entre 8 y 128 caracteres.
+              </Text>
             )}
             <FieldError>{fieldErrors.password}</FieldError>
           </TextField>
@@ -206,12 +228,15 @@ export function DJAccessForm({
               isInvalid={Boolean(fieldErrors.confirmation)}
             >
               <Label>Confirmar contraseña</Label>
-              <Input
-                name="password-confirmation"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={128}
-              />
+              <FieldInput icon={ShieldCheck}>
+                <Input
+                  name="password-confirmation"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={128}
+                  placeholder="Repite la contraseña"
+                />
+              </FieldInput>
               <FieldError>{fieldErrors.confirmation}</FieldError>
             </TextField>
           )}

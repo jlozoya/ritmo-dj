@@ -1,7 +1,17 @@
 'use client';
 import { useState, type FormEvent } from 'react';
 import { Button, Input, Label, Text, TextField } from 'react-aria-components';
-import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  Mail,
+  Save,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
+import { FieldInput } from '@/components/field-input';
 import { DJLayout } from '@/components/dj-layout';
 import { authClient } from '@/features/auth/lib/auth-client';
 import type { DJUser } from '@/types/music';
@@ -117,14 +127,27 @@ export function ProfilePage({
                 isDisabled={saving}
               >
                 <Label>Nombre del DJ</Label>
-                <Input maxLength={80} autoComplete="nickname" />
+                <FieldInput icon={UserRound}>
+                  <Input
+                    name="dj-name"
+                    maxLength={80}
+                    autoComplete="nickname"
+                    placeholder="Ej. DJ Fernando"
+                  />
+                </FieldInput>
               </TextField>
               <TextField value={user.email} isReadOnly>
-                <Label>Correo electrónico</Label>
-                <Input type="email" autoComplete="username" />
-                <Text slot="description">
-                  Correo asociado al inicio de sesión.
-                </Text>
+                <Label>
+                  Correo electrónico{' '}
+                  <span className="field-badge">Solo lectura</span>
+                </Label>
+                <FieldInput icon={Mail}>
+                  <Input
+                    name="account-email"
+                    type="email"
+                    autoComplete="username"
+                  />
+                </FieldInput>
               </TextField>
               {profileError && (
                 <p className="tip-error" role="alert">
@@ -141,6 +164,7 @@ export function ProfilePage({
                 className="primary"
                 isDisabled={saving || name.trim() === user.name}
               >
+                <Save size={16} aria-hidden="true" />
                 {saving ? 'Guardando…' : 'Guardar cambios'}
               </Button>
             </form>
@@ -162,7 +186,13 @@ export function ProfilePage({
                 isDisabled={changing}
               >
                 <Label>Contraseña actual</Label>
-                <Input maxLength={128} autoComplete="current-password" />
+                <FieldInput icon={LockKeyhole}>
+                  <Input
+                    name="current-password"
+                    maxLength={128}
+                    autoComplete="current-password"
+                  />
+                </FieldInput>
               </TextField>
               <TextField
                 type={visible ? 'text' : 'password'}
@@ -172,13 +202,16 @@ export function ProfilePage({
                 isDisabled={changing}
               >
                 <Label>Nueva contraseña</Label>
-                <Input
-                  minLength={8}
-                  maxLength={128}
-                  autoComplete="new-password"
-                />
+                <FieldInput icon={KeyRound}>
+                  <Input
+                    name="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
+                  />
+                </FieldInput>
                 <Text slot="description">
-                  Al menos 8 caracteres. Se cerrarán las sesiones de otros
+                  Entre 8 y 128 caracteres. Se cerrarán las sesiones de otros
                   dispositivos.
                 </Text>
               </TextField>
@@ -190,11 +223,15 @@ export function ProfilePage({
                 isDisabled={changing}
               >
                 <Label>Confirmar nueva contraseña</Label>
-                <Input
-                  minLength={8}
-                  maxLength={128}
-                  autoComplete="new-password"
-                />
+                <FieldInput icon={ShieldCheck}>
+                  <Input
+                    name="new-password-confirmation"
+                    minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    placeholder="Repite la nueva contraseña"
+                  />
+                </FieldInput>
               </TextField>
               <Button
                 className="password-visibility"
@@ -216,6 +253,7 @@ export function ProfilePage({
                 </p>
               )}
               <Button type="submit" className="primary" isDisabled={changing}>
+                <ShieldCheck size={16} aria-hidden="true" />
                 {changing ? 'Actualizando…' : 'Actualizar contraseña'}
               </Button>
             </form>

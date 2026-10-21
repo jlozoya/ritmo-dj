@@ -1,7 +1,8 @@
 'use client';
 import { useState, type FormEvent } from 'react';
 import { Button, Input, Label, Text, TextField } from 'react-aria-components';
-import { ArrowUpRight, Heart, LoaderCircle } from 'lucide-react';
+import { ArrowUpRight, Heart, Link2, LoaderCircle } from 'lucide-react';
+import { FieldInput } from '@/components/field-input';
 import { parseTipLink } from '../lib/tip-link';
 
 export function TipSettings({
@@ -64,12 +65,18 @@ export function TipSettings({
           validationBehavior="aria"
         >
           <Label>Enlace de pago</Label>
-          <Input
-            type="url"
-            maxLength={500}
-            placeholder="https://paypal.me/tuusuario"
-            autoComplete="off"
-          />
+          <FieldInput icon={Link2}>
+            <Input
+              name="tip-url"
+              type="url"
+              inputMode="url"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={500}
+              placeholder="https://paypal.me/tuusuario"
+              autoComplete="off"
+            />
+          </FieldInput>
           <Text slot="description">
             Pega tu enlace de PayPal.Me o Mercado Pago para mostrarlo al público
             de este evento.

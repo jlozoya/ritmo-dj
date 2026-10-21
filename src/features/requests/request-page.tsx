@@ -8,6 +8,7 @@ import {
   ListBox,
   ListBoxItem,
   TextArea,
+  Text,
   TextField,
 } from 'react-aria-components';
 import {
@@ -18,8 +19,11 @@ import {
   Plus,
   Radio,
   Search,
+  MessageSquare,
+  UserRound,
 } from 'lucide-react';
 import { Brand } from '@/components/brand';
+import { FieldInput } from '@/components/field-input';
 import { LoadingState } from '@/components/loading-state';
 import { api } from '@/lib/http';
 import type { EventDetail, SpotifyTrack } from '@/types/music';
@@ -199,21 +203,28 @@ export function RequestPage({ eventId }: { eventId: string }) {
                     onChange={setQuery}
                     isDisabled={!configured}
                   >
-                    <Label>
-                      <span className="label-icon">
-                        <Search size={17} />
-                      </span>
-                      Buscar en Spotify
-                    </Label>
-                    <Input
-                      ref={searchInput}
-                      autoComplete="off"
-                      placeholder={
-                        configured === false
-                          ? 'Búsqueda no disponible'
-                          : 'Canción o artista…'
-                      }
-                    />
+                    <Label>Buscar en Spotify</Label>
+                    <FieldInput icon={Search}>
+                      <Input
+                        ref={searchInput}
+                        name="spotify-search"
+                        type="search"
+                        inputMode="search"
+                        maxLength={100}
+                        spellCheck={false}
+                        autoComplete="off"
+                        placeholder={
+                          configured === false
+                            ? 'Búsqueda no disponible'
+                            : 'Canción o artista…'
+                        }
+                      />
+                    </FieldInput>
+                    {configured && query.trim().length === 1 && (
+                      <Text className="field-help" slot="description">
+                        Escribe al menos 2 caracteres para buscar.
+                      </Text>
+                    )}
                   </TextField>
                   {searching && (
                     <p className="search-hint" role="status">
@@ -290,7 +301,14 @@ export function RequestPage({ eventId }: { eventId: string }) {
                 <Label>
                   Tu nombre <small>Opcional</small>
                 </Label>
-                <Input maxLength={60} />
+                <FieldInput icon={UserRound}>
+                  <Input
+                    name="guest-name"
+                    maxLength={60}
+                    autoComplete="nickname"
+                    placeholder="Ej. Mariana"
+                  />
+                </FieldInput>
               </TextField>
               <TextField
                 value={form.message}
@@ -301,10 +319,20 @@ export function RequestPage({ eventId }: { eventId: string }) {
                 <Label>
                   Un mensaje para el DJ <small>Opcional</small>
                 </Label>
-                <TextArea
-                  maxLength={240}
-                  placeholder="Una dedicatoria, una ocasión especial…"
-                />
+                <FieldInput
+                  icon={MessageSquare}
+                  className="field-input-multiline"
+                >
+                  <TextArea
+                    name="message"
+                    rows={3}
+                    maxLength={240}
+                    placeholder="Ej. Para Ana por su cumpleaños."
+                  />
+                </FieldInput>
+                <Text slot="description" className="field-count">
+                  {form.message.length}/240 caracteres
+                </Text>
               </TextField>
               <Button
                 type="submit"
