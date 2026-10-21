@@ -51,6 +51,14 @@ export function createSongRequest(request: Request, context: EventContext) {
   });
 }
 
+export function recordTipClick(request: Request, context: EventContext) {
+  return apiResponse(async () => {
+    requireOrigin(request);
+    const { id } = await context.params;
+    return service.recordTipClick(id, await jsonBody(request));
+  });
+}
+
 export function deleteEvent(request: Request, context: EventContext) {
   return apiResponse(async () => {
     requireOrigin(request);

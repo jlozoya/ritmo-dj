@@ -314,6 +314,7 @@ export function DJPanel({
                 <TipSettings
                   key={event.id}
                   tipUrl={event.tipUrl}
+                  tipOpenCount={event.tipOpenCount || 0}
                   onSave={onSaveTipLink}
                 />
               )}

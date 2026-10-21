@@ -1,6 +1,14 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  isNull,
+  sql,
+} from 'drizzle-orm';
 import { getDb } from '@/server/db';
-import { events, requests } from '@/server/db/schema';
+import { events, requests, tipClicks } from '@/server/db/schema';
 import { HttpError } from '@/server/http';
 import { spotifyArtwork } from '@/server/spotify/artwork';
 import { parseTipLink } from '@/features/tips/lib/tip-link';
@@ -46,10 +54,28 @@ export async function getEvent(id: string, userId?: string) {
   const owner = userId === event.owner;
   const rows = owner
     ? await getDb()
-        .select()
+        .select({
+          ...getTableColumns(requests),
+          tipOpened: sql<boolean>`${tipClicks.client} is not null`.mapWith(
+            Boolean,
+          ),
+        })
         .from(requests)
+        .leftJoin(
+          tipClicks,
+          and(
+            eq(tipClicks.event, requests.event),
+            eq(tipClicks.client, requests.client),
+          ),
+        )
         .where(eq(requests.event, id))
         .orderBy(desc(requests.created))
+    : [];
+  const [tipTotal] = owner
+    ? await getDb()
+        .select({ total: count() })
+        .from(tipClicks)
+        .where(eq(tipClicks.event, id))
     : [];
   // Backfill older requests in small batches; Spotify outages leave the queue usable.
   await Promise.all(
@@ -76,8 +102,37 @@ export async function getEvent(id: string, userId?: string) {
     archived: event.archived,
     tipUrl: event.archived && !owner ? null : event.tipUrl,
     owner,
+    ...(owner ? { tipOpenCount: tipTotal?.total || 0 } : {}),
     requests: rows,
   };
+}
+
+export async function recordTipClick(
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const event = await findEvent(id);
+  if (!event || event.archived || !event.tipUrl)
+    throw new HttpError(
+      400,
+      'Las propinas no están disponibles para este evento.',
+    );
+  if (
+    typeof body.client !== 'string' ||
+    !body.client.trim() ||
+    body.client.length > 80
+  )
+    throw new HttpError(400, 'El identificador del visitante no es válido.');
+  // One opening per browser and event, including clicks before a song is requested.
+  await getDb()
+    .insert(tipClicks)
+    .values({
+      event: id,
+      client: body.client,
+      created: new Date().toISOString(),
+    })
+    .onConflictDoNothing();
+  return { ok: true };
 }
 
 const requestStatuses: RequestStatus[] = [

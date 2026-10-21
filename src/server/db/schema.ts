@@ -1,4 +1,10 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  primaryKey,
+} from 'drizzle-orm/sqlite-core';
 export const events = sqliteTable('events', {
   id: text('id').primaryKey(),
   owner: text('owner').notNull(),
@@ -23,6 +29,18 @@ export const requests = sqliteTable('requests', {
   created: text('created').notNull(),
   client: text('client').notNull(),
 });
+
+export const tipClicks = sqliteTable(
+  'tip_clicks',
+  {
+    event: text('event')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    client: text('client').notNull(),
+    created: text('created').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.event, table.client] })],
+);
 
 export const user = sqliteTable('auth_user', {
   id: text('id').primaryKey(),

@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   Check,
   Clock3,
+  Heart,
   LoaderCircle,
   Music2,
   Play,
@@ -71,6 +72,14 @@ export function SongCard({
                 })}
               </time>
             </div>
+            {song.tipOpened && (
+              <span
+                className="song-tip-indicator"
+                title="Registramos el clic; el pago no está confirmado."
+              >
+                <Heart size={13} aria-hidden="true" /> Abrió enlace de propina
+              </span>
+            )}
           </div>
         </div>
         {song.message && (

@@ -48,6 +48,12 @@ public/                Recursos estáticos
 
 ## Convenciones
 
+Los enlaces de propinas no confirman pagos ni importes. `tip_clicks` conserva una
+apertura por navegador y evento; la cabina muestra el contador y el indicador en
+las solicitudes de ese navegador, incluso si se enviaron antes del clic. Los
+totales solo se exponen al propietario. No se asocian visitantes por su nombre.
+El enlace de pago se abre inmediatamente aunque falle el registro del clic.
+
 - Archivos en `kebab-case`; componentes React en `PascalCase`.
 - TypeScript estricto, sin `any` en los contratos de la API.
 - Prettier para formato y ESLint para reglas de código y límites de importación.

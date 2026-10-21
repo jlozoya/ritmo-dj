@@ -29,7 +29,7 @@ import { api } from '@/lib/http';
 import type { EventDetail, SpotifyTrack } from '@/types/music';
 import { useTrackSearch } from '@/features/spotify/hooks/use-track-search';
 import { SelectedTrack } from './components/selected-track';
-import { createClientId } from './lib/client-id';
+import { getClientId } from './lib/client-id';
 import { GuestTipCard } from '@/features/tips/components/guest-tip-card';
 
 type RequestForm = {
@@ -113,11 +113,7 @@ export function RequestPage({ eventId }: { eventId: string }) {
     setSending(true);
     setError('');
     try {
-      let client = window.localStorage.getItem('ritmo-client');
-      if (!client) {
-        client = createClientId();
-        window.localStorage.setItem('ritmo-client', client);
-      }
+      const client = getClientId();
       await api<{ ok: boolean }>(`/api/event/${encodeURIComponent(eventId)}`, {
         ...form,
         title: selectedTrack.title,
@@ -357,7 +353,7 @@ export function RequestPage({ eventId }: { eventId: string }) {
             </form>
           )}
           {event && !loading && !event.archived && (
-            <GuestTipCard tipUrl={event.tipUrl} />
+            <GuestTipCard eventId={event.id} tipUrl={event.tipUrl} />
           )}
         </main>
       </div>

@@ -36,6 +36,13 @@
       "when": 1792592706295,
       "tag": "0004_add-event-archive",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792596052675,
+      "tag": "0005_track-tip-openings",
+      "breakpoints": true
     }
   ]
 }

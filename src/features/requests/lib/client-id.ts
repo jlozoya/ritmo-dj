@@ -17,3 +17,18 @@ export function createClientId(source: ClientCrypto = globalThis.crypto) {
     hex.slice(10).join(''),
   ].join('-');
 }
+
+let memoryClient: string | undefined;
+
+export function getClientId() {
+  try {
+    const saved = window.localStorage.getItem('ritmo-client');
+    if (saved) return saved;
+    memoryClient ||= createClientId();
+    window.localStorage.setItem('ritmo-client', memoryClient);
+  } catch {
+    // Keep tips and requests associated in this tab when storage is unavailable.
+    memoryClient ||= createClientId();
+  }
+  return memoryClient;
+}

@@ -19,6 +19,7 @@ export interface SongRequest {
   image: string | null;
   status: RequestStatus;
   created: string;
+  tipOpened: boolean;
 }
 
 export interface SpotifyTrack {
@@ -37,6 +38,7 @@ export type EventSummary = Pick<
 >;
 export type EventDetail = PublicEvent & {
   owner: boolean;
+  tipOpenCount?: number;
   requests: SongRequest[];
 };
 export type DJUser = { name: string; email: string };

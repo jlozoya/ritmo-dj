@@ -331,6 +331,91 @@ try {
     'The DJ must receive the selected Spotify artwork with the request.',
   );
 
+  const tipPath = `${eventPath}/tip-click`;
+  check(
+    (await request(eventPath, { cookie: first.cookie })).body.tipOpenCount ===
+      0,
+    'Events start with no tip-link openings.',
+  );
+  check(
+    (await request(eventPath, { cookie: first.cookie })).body.requests[0]
+      .tipOpened === false,
+    'Requests must not imply a tip-link click before one is recorded.',
+  );
+  check(
+    (
+      await request(tipPath, {
+        method: 'POST',
+        origin: 'https://untrusted.example',
+        body: { client: prefix },
+      })
+    ).status === 403,
+    'Cross-origin tip tracking must be rejected.',
+  );
+  for (const client of [null, '', '   ', 'x'.repeat(81), { invalid: true }])
+    check(
+      (await request(tipPath, { method: 'POST', body: { client } })).status ===
+        400,
+      'Tip tracking requires a valid visitor identifier.',
+    );
+  const duplicateClicks = await Promise.all(
+    Array.from({ length: 3 }, () =>
+      request(tipPath, { method: 'POST', body: { client: prefix } }),
+    ),
+  );
+  check(
+    duplicateClicks.every((result) => result.status === 200),
+    'Repeated concurrent clicks must be idempotent.',
+  );
+  const clicked = (await request(eventPath, { cookie: first.cookie })).body;
+  check(
+    clicked.tipOpenCount === 1 && clicked.requests[0].tipOpened === true,
+    'A click marks existing requests and counts the browser only once.',
+  );
+  const publicTips = (await request(eventPath)).body;
+  check(
+    !Object.hasOwn(publicTips, 'tipOpenCount') &&
+      publicTips.requests.length === 0,
+    'Tip counts and request indicators remain private to the DJ.',
+  );
+  const beforeClient = `${prefix}-before`;
+  check(
+    (await request(tipPath, { method: 'POST', body: { client: beforeClient } }))
+      .status === 200,
+    'Guests can open tips before sending a song.',
+  );
+  for (const client of [beforeClient, `${prefix}-unclicked`])
+    check(
+      (
+        await request(eventPath, {
+          method: 'POST',
+          body: {
+            title:
+              client === beforeClient ? 'After opening tips' : 'No tip opening',
+            artist: 'Test artist',
+            guest: 'Same guest name',
+            client,
+            spotify: 'https://open.spotify.com/track/2cGxRwrMyEAp8dEbuZaVv6',
+            image:
+              'https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937',
+          },
+        })
+      ).status === 200,
+      'Guests can send requests after tip tracking.',
+    );
+  const afterClick = (await request(eventPath, { cookie: first.cookie })).body;
+  check(
+    afterClick.tipOpenCount === 2 &&
+      afterClick.requests.find((song) => song.title === 'After opening tips')
+        ?.tipOpened === true,
+    'Future requests inherit this browser’s event-specific opening.',
+  );
+  check(
+    afterClick.requests.find((song) => song.title === 'No tip opening')
+      ?.tipOpened === false,
+    'Identical guest names must not share tip indicators.',
+  );
+
   // Optional live-catalog check for requests saved before artwork was stored.
   if (process.env.RITMO_TEST_SPOTIFY === '1') {
     check(
@@ -379,6 +464,10 @@ try {
   );
   const otherView = await request(eventPath, { cookie: second.cookie });
   check(
+    !Object.hasOwn(otherView.body, 'tipOpenCount'),
+    'Another DJ cannot read tip-link totals.',
+  );
+  check(
     otherView.body.owner === false && otherView.body.requests.length === 0,
     'Another DJ must not see private requests.',
   );
@@ -423,6 +512,20 @@ try {
   check(
     (await request(eventPath)).body.tipUrl === null,
     'Disabled tips must remove the public payment link.',
+  );
+  check(
+    (
+      await request(tipPath, {
+        method: 'POST',
+        body: { client: `${prefix}-disabled` },
+      })
+    ).status === 400,
+    'Disabled tips reject new opening records.',
+  );
+  check(
+    (await request(eventPath, { cookie: first.cookie })).body.tipOpenCount ===
+      2,
+    'Disabling tips preserves the recorded history.',
   );
   check(
     (
@@ -482,6 +585,20 @@ try {
   check(
     (await request('/api/events?archived=1')).status === 401,
     'Archived event lists require authentication.',
+  );
+  check(
+    (await request(lifecyclePath, { cookie: first.cookie })).body
+      .tipOpenCount === 0,
+    'Tip counts must be isolated per event.',
+  );
+  check(
+    (
+      await request(`${lifecyclePath}/tip-click`, {
+        method: 'POST',
+        body: { client: testSong.client },
+      })
+    ).status === 200,
+    'Lifecycle test records a tip-link opening.',
   );
   for (const cookie of [undefined, second.cookie]) {
     check(
@@ -594,6 +711,20 @@ try {
   );
   const archivedOwner = await request(lifecyclePath, { cookie: first.cookie });
   check(
+    archivedOwner.body.tipOpenCount === 1 &&
+      archivedOwner.body.requests[0].tipOpened === true,
+    'Archived events preserve tip indicators and totals.',
+  );
+  check(
+    (
+      await request(`${lifecyclePath}/tip-click`, {
+        method: 'POST',
+        body: { client: `${prefix}-archived` },
+      })
+    ).status === 400,
+    'Archived events reject new tip clicks.',
+  );
+  check(
     archivedOwner.body.requests.length === 1 &&
       archivedOwner.body.requests[0].title === testSong.title,
     'Archiving must preserve requests.',
@@ -673,14 +804,14 @@ try {
       '.wrangler/state',
       '--json',
       '--command',
-      `SELECT COUNT(*) AS total FROM requests WHERE event = '${String(lifecycle.body.id).replaceAll("'", "''")}';`,
+      `SELECT (SELECT COUNT(*) FROM requests WHERE event = '${String(lifecycle.body.id).replaceAll("'", "''")}') + (SELECT COUNT(*) FROM tip_clicks WHERE event = '${String(lifecycle.body.id).replaceAll("'", "''")}') AS total;`,
     ],
     { cwd: root, encoding: 'utf8' },
   );
   check(
     orphanCheck.status === 0 &&
       JSON.parse(orphanCheck.stdout)[0].results[0].total === 0,
-    'Deleting an event must leave no orphaned requests in D1.',
+    'Deleting an event must leave no orphaned requests or tip clicks in D1.',
   );
 
   check(

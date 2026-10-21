@@ -7,9 +7,11 @@ import { parseTipLink } from '../lib/tip-link';
 
 export function TipSettings({
   tipUrl,
+  tipOpenCount,
   onSave,
 }: {
   tipUrl: string | null;
+  tipOpenCount: number;
   onSave: (url: string | null) => Promise<void>;
 }) {
   const [value, setValue] = useState(tipUrl || '');
@@ -51,6 +53,13 @@ export function TipSettings({
         <Heart size={19} aria-hidden="true" />
         <h2>Propinas</h2>
         {link && <span className="tip-enabled">Activas</span>}
+      </div>
+      <div className="tip-opening-total">
+        <strong>{tipOpenCount}</strong>
+        <span>
+          {tipOpenCount === 1 ? 'apertura del enlace' : 'aperturas del enlace'}
+        </span>
+        <small>Una por navegador. No confirma pagos.</small>
       </div>
       <form onSubmit={submit}>
         <TextField
