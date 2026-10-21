@@ -1972,6 +1972,9 @@ button,
 .workspace-app .title-row {
   margin-bottom: 18px;
 }
+.workspace-app .dashboard-title-row {
+  margin-bottom: 12px;
+}
 .workspace-app .title-row h1 {
   font-size: 26px;
   letter-spacing: -0.8px;
@@ -1989,11 +1992,10 @@ button,
 }
 .event-toolbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 68px;
-  padding: 12px 0;
+  padding: 0 0 12px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -2008,10 +2010,6 @@ button,
   margin: 0;
   min-width: 0;
   max-width: 360px;
-}
-.event-toolbar .event-select label {
-  margin: 0 0 5px;
-  font-size: 11px;
 }
 .event-toolbar .event-select-trigger {
   margin: 0;

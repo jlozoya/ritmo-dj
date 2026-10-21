@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import {
   Button,
-  Label,
   ListBox,
   ListBoxItem,
   Popover,
@@ -113,7 +112,7 @@ export function DJPanel({
       }
     >
       <main>
-        <div className="title-row">
+        <div className="title-row dashboard-title-row">
           <div>
             <h1>Cabina</h1>
           </div>
@@ -140,10 +139,10 @@ export function DJPanel({
           {events.length > 1 ? (
             <Select
               className="event-select"
+              aria-label="Cambiar evento"
               selectedKey={event?.id || null}
               onSelectionChange={(key) => onSelect(String(key))}
             >
-              <Label>Cambiar evento</Label>
               <Button className="event-select-trigger">
                 <SelectValue /> <span aria-hidden="true">▾</span>
               </Button>
