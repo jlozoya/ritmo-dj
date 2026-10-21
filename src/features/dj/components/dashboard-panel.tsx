@@ -15,6 +15,7 @@ import {
 } from 'react-aria-components';
 import {
   ArrowUpRight,
+  Archive,
   Link2,
   Music2,
   Pause,
@@ -30,6 +31,7 @@ import { statuses, labels } from '../request-status';
 import { SharingCard } from './sharing-card';
 import { SongCard } from './song-card';
 import { TipSettings } from '@/features/tips/components/tip-settings';
+import { EventOptions } from './event-options';
 
 export function DJPanel({
   user,
@@ -48,6 +50,10 @@ export function DJPanel({
   onToast,
   updatingRequests = [],
   onSaveTipLink,
+  onArchivedEvents,
+  onArchive,
+  onDelete,
+  eventBusy,
 }: {
   user: { name: string; email: string };
   onSignOut: () => void;
@@ -69,6 +75,10 @@ export function DJPanel({
   onToast: (message: string) => void;
   updatingRequests?: string[];
   onSaveTipLink: (url: string | null) => Promise<void>;
+  onArchivedEvents: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  eventBusy: boolean;
 }) {
   const [filter, setFilter] = useState<RequestStatus>('pending');
   const rows = event?.requests || [];
@@ -107,10 +117,16 @@ export function DJPanel({
           <div>
             <h1>Cabina</h1>
           </div>
-          <Button className="outline new-event-button" onPress={onNewEvent}>
-            <Plus size={18} />
-            Nuevo evento
-          </Button>
+          <div className="event-title-actions">
+            <Button className="outline" onPress={onArchivedEvents}>
+              <Archive size={16} />
+              Archivados
+            </Button>
+            <Button className="outline new-event-button" onPress={onNewEvent}>
+              <Plus size={18} />
+              Nuevo evento
+            </Button>
+          </div>
         </div>
         {error && (
           <div className="error" role="alert">
@@ -160,11 +176,17 @@ export function DJPanel({
                 </Button>
                 <Button
                   className="outline"
+                  isDisabled={eventBusy}
                   onPress={() => onUpdate({ open: !event.open })}
                 >
                   {event.open ? <Pause size={15} /> : <Play size={15} />}
                   {event.open ? 'Pausar peticiones' : 'Abrir peticiones'}
                 </Button>
+                <EventOptions
+                  disabled={eventBusy || updatingRequests.length > 0}
+                  onArchive={onArchive}
+                  onDelete={onDelete}
+                />
               </>
             ) : (
               !busy && (
@@ -266,7 +288,9 @@ export function DJPanel({
                               key={song.id}
                               song={song}
                               index={i}
-                              isUpdating={updatingRequests.includes(song.id)}
+                              isUpdating={
+                                eventBusy || updatingRequests.includes(song.id)
+                              }
                               onUpdate={(id, state) =>
                                 onUpdate({ requestId: id, status: state })
                               }

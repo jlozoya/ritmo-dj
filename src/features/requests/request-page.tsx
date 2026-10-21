@@ -147,7 +147,11 @@ export function RequestPage({ eventId }: { eventId: string }) {
           {event && (
             <div className="header-right">
               <span className="live-dot" />{' '}
-              {event.open ? 'Peticiones abiertas' : 'Peticiones pausadas'}
+              {event.archived
+                ? 'Evento archivado'
+                : event.open
+                  ? 'Peticiones abiertas'
+                  : 'Peticiones pausadas'}
             </div>
           )}
         </header>
@@ -172,6 +176,11 @@ export function RequestPage({ eventId }: { eventId: string }) {
           ) : !event ? (
             <div className="empty">
               No encontramos este evento. Verifica el código QR.
+            </div>
+          ) : event.archived ? (
+            <div className="empty">
+              <Pause />
+              Este evento ha finalizado.
             </div>
           ) : !event.open ? (
             <div className="empty">
@@ -347,7 +356,9 @@ export function RequestPage({ eventId }: { eventId: string }) {
               </p>
             </form>
           )}
-          {event && !loading && <GuestTipCard tipUrl={event.tipUrl} />}
+          {event && !loading && !event.archived && (
+            <GuestTipCard tipUrl={event.tipUrl} />
+          )}
         </main>
       </div>
     </div>

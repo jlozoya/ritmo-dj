@@ -2025,6 +2025,143 @@ button,
   padding: 9px 12px;
   font-size: 12px;
 }
+.event-title-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.event-title-actions > button {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.event-toolbar-actions .event-options-trigger {
+  flex: 0 0 40px;
+  padding: 8px;
+}
+.event-options-popover {
+  z-index: 60;
+  padding: 6px;
+  background: #20202a;
+  border: 1px solid #464050;
+  border-radius: 10px;
+  box-shadow: 0 12px 36px #0005;
+  min-width: 205px;
+}
+.event-options-popover [role='menuitem'] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  outline: none;
+}
+.event-options-popover [role='menuitem'][data-focused] {
+  background: #c2a4ff18;
+}
+.event-options-popover .event-delete-item,
+.danger-text {
+  color: #ffb4bd;
+}
+.event-management-modal {
+  width: min(560px, calc(100vw - 36px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+.event-management-modal h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 24px;
+  font-size: 25px;
+  margin-bottom: 18px;
+}
+.event-management-modal p {
+  color: #b5adbf;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.event-management-modal .react-aria-TextField {
+  display: block;
+  margin-top: 22px;
+}
+.event-management-modal label {
+  display: block;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.event-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.event-dialog-actions > button {
+  padding: 11px 16px;
+  min-height: 44px;
+  font-size: 12px;
+}
+.danger-button {
+  background: #9f3047;
+  color: #fff;
+  font-weight: 600;
+}
+.archived-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 0;
+  display: grid;
+  gap: 10px;
+}
+.archived-event-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  background: #111217;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.archived-event-list li > span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.archived-event-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.archived-event-actions button {
+  min-height: 40px;
+  padding: 9px;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .workspace-app .title-row {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .event-title-actions {
+    gap: 8px;
+  }
+  .event-title-actions > button,
+  .workspace-app .event-title-actions .new-event-button {
+    font-size: 11px;
+    padding: 9px;
+  }
+  .event-title-actions svg {
+    width: 14px;
+  }
+  .archived-event-list li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
 .profile-main {
   max-width: 1200px;
 }

@@ -445,6 +445,244 @@ try {
     'The owner must be able to pause requests.',
   );
 
+  const lifecycleName = `${prefix}-lifecycle`;
+  const lifecycle = await request('/api/events', {
+    method: 'POST',
+    cookie: first.cookie,
+    body: { name: lifecycleName },
+  });
+  if (lifecycle.body?.id) eventIds.push(lifecycle.body.id);
+  check(
+    lifecycle.status === 200 && lifecycle.body.archived === 0,
+    'New events must start unarchived.',
+  );
+  const lifecyclePath = `/api/event/${lifecycle.body.id}`;
+  const testSong = {
+    title: 'Preserved song',
+    artist: 'Test artist',
+    client: `${prefix}-archive`,
+    spotify: 'https://open.spotify.com/track/2cGxRwrMyEAp8dEbuZaVv6',
+    image: 'https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937',
+  };
+  check(
+    (await request(lifecyclePath, { method: 'POST', body: testSong }))
+      .status === 200,
+    'Lifecycle tests require a stored request.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { tipUrl: 'https://paypal.me/TestDJ' },
+      })
+    ).status === 200,
+    'Lifecycle tests require a configured tip link.',
+  );
+  check(
+    (await request('/api/events?archived=1')).status === 401,
+    'Archived event lists require authentication.',
+  );
+  for (const cookie of [undefined, second.cookie]) {
+    check(
+      (
+        await request(lifecyclePath, {
+          method: 'PATCH',
+          cookie,
+          body: { archived: true },
+        })
+      ).status === 403,
+      'Only the owner can archive an event.',
+    );
+    check(
+      (
+        await request(lifecyclePath, {
+          method: 'DELETE',
+          cookie,
+          body: { confirmationName: lifecycleName },
+        })
+      ).status === 403,
+      'Only the owner can delete an event.',
+    );
+  }
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        origin: 'https://untrusted.example',
+        body: { archived: true },
+      })
+    ).status === 403,
+    'Cross-origin archives must be rejected.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'DELETE',
+        cookie: first.cookie,
+        origin: 'https://untrusted.example',
+        body: { confirmationName: lifecycleName },
+      })
+    ).status === 403,
+    'Cross-origin deletion must be rejected.',
+  );
+  for (const body of [{}, { confirmationName: 'wrong name' }])
+    check(
+      (
+        await request(lifecyclePath, {
+          method: 'DELETE',
+          cookie: first.cookie,
+          body,
+        })
+      ).status === 400,
+      'Deletion requires the exact event name.',
+    );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { archived: true },
+      })
+    ).status === 200,
+    'The owner can archive an event.',
+  );
+  check(
+    !(await request('/api/events', { cookie: first.cookie })).body.some(
+      (row) => row.id === lifecycle.body.id,
+    ),
+    'Archived events must leave the active list.',
+  );
+  check(
+    (
+      await request('/api/events?archived=1', { cookie: first.cookie })
+    ).body.some((row) => row.id === lifecycle.body.id),
+    'The owner can find archived events.',
+  );
+  check(
+    !(
+      await request('/api/events?archived=1', { cookie: second.cookie })
+    ).body.some((row) => row.id === lifecycle.body.id),
+    'Archived events remain isolated by owner.',
+  );
+  const archivedPublic = await request(lifecyclePath);
+  check(
+    archivedPublic.body.archived === 1 &&
+      archivedPublic.body.open === 0 &&
+      archivedPublic.body.tipUrl === null,
+    'Public archived events must be closed and hide the payment link.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'POST',
+        body: { ...testSong, client: `${prefix}-blocked` },
+      })
+    ).status === 400,
+    'Archived events must reject new song requests.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { open: true },
+      })
+    ).status === 409,
+    'Archived events cannot be reopened until restored.',
+  );
+  const archivedOwner = await request(lifecyclePath, { cookie: first.cookie });
+  check(
+    archivedOwner.body.requests.length === 1 &&
+      archivedOwner.body.requests[0].title === testSong.title,
+    'Archiving must preserve requests.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'PATCH',
+        cookie: first.cookie,
+        body: { archived: false },
+      })
+    ).status === 200,
+    'The owner can restore an archived event.',
+  );
+  const restored = await request(lifecyclePath, { cookie: first.cookie });
+  check(
+    restored.body.archived === 0 &&
+      restored.body.open === 0 &&
+      restored.body.tipUrl === 'https://paypal.me/TestDJ',
+    'Restoring preserves the tip link and keeps requests paused.',
+  );
+  check(
+    restored.body.requests.length === 1 &&
+      restored.body.requests[0].image === testSong.image,
+    'Restoring must preserve song data and artwork.',
+  );
+  check(
+    (await request('/api/events', { cookie: first.cookie })).body.some(
+      (row) => row.id === lifecycle.body.id,
+    ),
+    'Restored events must return to the active list.',
+  );
+  check(
+    !(
+      await request('/api/events?archived=1', { cookie: first.cookie })
+    ).body.some((row) => row.id === lifecycle.body.id),
+    'Restored events must leave the archive.',
+  );
+  check(
+    (
+      await request(lifecyclePath, {
+        method: 'DELETE',
+        cookie: first.cookie,
+        body: { confirmationName: lifecycleName },
+      })
+    ).status === 200,
+    'The owner can delete an event after exact-name confirmation.',
+  );
+  check(
+    (await request(lifecyclePath)).status === 404,
+    'Deleted event links must stop resolving.',
+  );
+  check(
+    !(await request('/api/events', { cookie: first.cookie })).body.some(
+      (row) => row.id === lifecycle.body.id,
+    ),
+    'Deleted events must disappear from the active list.',
+  );
+  check(
+    (await request(eventPath, { cookie: first.cookie })).body.requests.length >=
+      1,
+    'Deleting one event must not affect another event.',
+  );
+  const orphanCheck = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      './scripts/sites-env.mjs',
+      './node_modules/wrangler/bin/wrangler.js',
+      'd1',
+      'execute',
+      'DB',
+      '--local',
+      '--config',
+      'wrangler.local.json',
+      '--persist-to',
+      '.wrangler/state',
+      '--json',
+      '--command',
+      `SELECT COUNT(*) AS total FROM requests WHERE event = '${String(lifecycle.body.id).replaceAll("'", "''")}';`,
+    ],
+    { cwd: root, encoding: 'utf8' },
+  );
+  check(
+    orphanCheck.status === 0 &&
+      JSON.parse(orphanCheck.stdout)[0].results[0].total === 0,
+    'Deleting an event must leave no orphaned requests in D1.',
+  );
+
   check(
     (
       await request('/api/auth/sign-out', {

@@ -5,6 +5,7 @@ export interface PublicEvent {
   id: string;
   name: string;
   open: number;
+  archived: number;
   tipUrl: string | null;
 }
 
@@ -30,7 +31,10 @@ export interface SpotifyTrack {
   durationMs: number;
 }
 
-export type EventSummary = Pick<PublicEvent, 'id' | 'name' | 'open'>;
+export type EventSummary = Pick<
+  PublicEvent,
+  'id' | 'name' | 'open' | 'archived'
+>;
 export type EventDetail = PublicEvent & {
   owner: boolean;
   requests: SongRequest[];

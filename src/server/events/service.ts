@@ -6,11 +6,11 @@ import { spotifyArtwork } from '@/server/spotify/artwork';
 import { parseTipLink } from '@/features/tips/lib/tip-link';
 import type { RequestStatus } from '@/types/music';
 
-export function listEvents(owner: string) {
+export function listEvents(owner: string, archived = false) {
   return getDb()
     .select()
     .from(events)
-    .where(eq(events.owner, owner))
+    .where(and(eq(events.owner, owner), eq(events.archived, Number(archived))))
     .orderBy(desc(events.created));
 }
 
@@ -27,6 +27,7 @@ export async function createEvent(
     owner,
     name,
     open: 1,
+    archived: 0,
     tipUrl: null,
     created: new Date().toISOString(),
   };
@@ -72,7 +73,8 @@ export async function getEvent(id: string, userId?: string) {
     id: event.id,
     name: event.name,
     open: event.open,
-    tipUrl: event.tipUrl,
+    archived: event.archived,
+    tipUrl: event.archived && !owner ? null : event.tipUrl,
     owner,
     requests: rows,
   };
@@ -99,6 +101,15 @@ export async function updateEvent(
   const event = await findEvent(id);
   if (!event || userId !== event.owner) throw new HttpError(403, 'Sin acceso');
   const db = getDb();
+  if (typeof body.archived === 'boolean') {
+    await db
+      .update(events)
+      .set({ archived: Number(body.archived), open: 0 })
+      .where(eq(events.id, id));
+    return { ok: true };
+  }
+  if (event.archived)
+    throw new HttpError(409, 'Restaura el evento antes de modificarlo.');
   if (Object.hasOwn(body, 'tipUrl')) {
     if (body.tipUrl !== null && typeof body.tipUrl !== 'string')
       throw new HttpError(400, 'El enlace de propinas no es válido.');
@@ -129,12 +140,34 @@ export async function updateEvent(
   return { ok: true };
 }
 
+export async function deleteEvent(
+  id: string,
+  userId: string | undefined,
+  body: Record<string, unknown>,
+) {
+  const event = await findEvent(id);
+  if (!event || userId !== event.owner) throw new HttpError(403, 'Sin acceso');
+  if (body.confirmationName !== event.name)
+    throw new HttpError(
+      400,
+      'Escribe el nombre exacto del evento para eliminarlo.',
+    );
+  const db = getDb();
+  await db.batch([
+    db.delete(requests).where(eq(requests.event, id)),
+    db
+      .delete(events)
+      .where(and(eq(events.id, id), eq(events.owner, event.owner))),
+  ]);
+  return { ok: true };
+}
+
 export async function createSongRequest(
   id: string,
   body: Record<string, unknown>,
 ) {
   const event = await findEvent(id);
-  if (!event || !event.open)
+  if (!event || !event.open || event.archived)
     throw new HttpError(400, 'Este evento no acepta peticiones.');
   const title = String(body.title || '')
     .trim()

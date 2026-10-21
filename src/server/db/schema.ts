@@ -4,6 +4,7 @@ export const events = sqliteTable('events', {
   owner: text('owner').notNull(),
   name: text('name').notNull(),
   open: integer('open').notNull().default(1),
+  archived: integer('archived').notNull().default(0),
   tipUrl: text('tip_url'),
   created: text('created').notNull(),
 });

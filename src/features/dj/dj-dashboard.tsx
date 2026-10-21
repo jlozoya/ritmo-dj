@@ -21,6 +21,8 @@ import { FieldInput } from '@/components/field-input';
 import { api } from '@/lib/http';
 import type { EventDetail, EventSummary, RequestStatus } from '@/types/music';
 import { DJPanel } from './components/dashboard-panel';
+import { ArchivedEventsDialog } from './components/archived-events-dialog';
+import { EventDeleteDialog } from './components/event-delete-dialog';
 
 export function DJDashboard({
   user,
@@ -43,6 +45,13 @@ export function DJDashboard({
   const [sound, setSound] = useState(false);
   const [lastSync, setLastSync] = useState(false);
   const [updatingRequests, setUpdatingRequests] = useState<string[]>([]);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const [archivedEvents, setArchivedEvents] = useState<EventSummary[]>([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [archivedError, setArchivedError] = useState('');
+  const [eventBusy, setEventBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EventSummary | null>(null);
+  const activeIdRef = useRef('');
   const seen = useRef<Set<string> | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const soundRef = useRef(false);
@@ -62,6 +71,7 @@ export function DJDashboard({
       const detail = await api<EventDetail>(
         `/api/event/${encodeURIComponent(id)}`,
       );
+      if (activeIdRef.current !== id) return;
       if (!detail.owner) throw new Error('No tienes acceso a este evento.');
       setEvent(detail);
       setLastSync(true);
@@ -112,9 +122,10 @@ export function DJDashboard({
       .then((list) => {
         setEvents(list);
         const remembered = window.localStorage.getItem('ritmo-active-event');
-        setActiveId(
-          list.find((item) => item.id === remembered)?.id || list[0]?.id || '',
-        );
+        const selected =
+          list.find((item) => item.id === remembered)?.id || list[0]?.id || '';
+        activeIdRef.current = selected;
+        setActiveId(selected);
       })
       .catch((e) => {
         if (!controller.signal.aborted) setError((e as Error).message);
@@ -131,7 +142,7 @@ export function DJDashboard({
     let cancelled = false;
     const tick = () =>
       refresh(activeId).catch((e) => {
-        if (!cancelled) {
+        if (!cancelled && activeIdRef.current === activeId) {
           setLastSync(false);
           setError((e as Error).message);
           onSessionCheck();
@@ -166,6 +177,7 @@ export function DJDashboard({
   }
 
   function selectEvent(id: string) {
+    activeIdRef.current = id;
     setLastSync(false);
     seen.current = null;
     setEvent(null);
@@ -218,6 +230,92 @@ export function DJDashboard({
     );
   }
 
+  function removeActiveEvent(id: string) {
+    const remaining = events.filter((item) => item.id !== id);
+    setEvents(remaining);
+    if (activeIdRef.current === id) selectEvent(remaining[0]?.id || '');
+  }
+
+  async function showArchived() {
+    setArchivedOpen(true);
+    setArchivedLoading(true);
+    setArchivedError('');
+    try {
+      setArchivedEvents(await api<EventSummary[]>('/api/events?archived=1'));
+    } catch (e) {
+      setArchivedError((e as Error).message);
+    } finally {
+      setArchivedLoading(false);
+    }
+  }
+
+  async function archiveEvent() {
+    if (!event || eventBusy) return;
+    const id = event.id;
+    setEventBusy(true);
+    setError('');
+    try {
+      await api(
+        `/api/event/${encodeURIComponent(id)}`,
+        { archived: true },
+        'PATCH',
+      );
+      removeActiveEvent(id);
+      notify('Evento archivado. Puedes recuperarlo desde Archivados.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
+  async function restoreEvent(item: EventSummary) {
+    if (eventBusy) return;
+    setEventBusy(true);
+    setArchivedError('');
+    try {
+      await api(
+        `/api/event/${encodeURIComponent(item.id)}`,
+        { archived: false },
+        'PATCH',
+      );
+      setEvents((previous) => [
+        { ...item, archived: 0, open: 0 },
+        ...previous.filter((event) => event.id !== item.id),
+      ]);
+      setArchivedEvents((previous) =>
+        previous.filter((event) => event.id !== item.id),
+      );
+      selectEvent(item.id);
+      setArchivedOpen(false);
+      notify('Evento restaurado. Las peticiones están pausadas.');
+    } catch (e) {
+      setArchivedError((e as Error).message);
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
+  async function deleteEvent(confirmationName: string) {
+    if (!deleteTarget || eventBusy) return;
+    const id = deleteTarget.id;
+    setEventBusy(true);
+    try {
+      await api(
+        `/api/event/${encodeURIComponent(id)}`,
+        { confirmationName },
+        'DELETE',
+      );
+      removeActiveEvent(id);
+      setArchivedEvents((previous) =>
+        previous.filter((item) => item.id !== id),
+      );
+      notify('Evento eliminado');
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
   return (
     <>
       <DJPanel
@@ -225,7 +323,7 @@ export function DJDashboard({
         onSignOut={onSignOut}
         event={event}
         events={events}
-        busy={loading}
+        busy={loading || Boolean(activeId && !event && !error)}
         error={error}
         lastSync={lastSync}
         sound={sound}
@@ -237,12 +335,39 @@ export function DJDashboard({
         onSelect={selectEvent}
         onUpdate={updateEvent}
         onSaveTipLink={saveTipLink}
+        eventBusy={eventBusy}
+        onArchivedEvents={() => void showArchived()}
+        onArchive={() => void archiveEvent()}
+        onDelete={() => setDeleteTarget(event)}
         onAlerts={() => {
           alerts().catch(() => notify('No se pudieron activar los avisos.'));
         }}
         onDismissError={() => setError('')}
         onToast={notify}
       />
+      {archivedOpen && (
+        <ArchivedEventsDialog
+          events={archivedEvents}
+          loading={archivedLoading}
+          busy={eventBusy}
+          error={archivedError}
+          onClose={() => setArchivedOpen(false)}
+          onRetry={() => void showArchived()}
+          onRestore={(item) => void restoreEvent(item)}
+          onDelete={(item) => {
+            setArchivedOpen(false);
+            setDeleteTarget(item);
+          }}
+        />
+      )}
+      {deleteTarget && (
+        <EventDeleteDialog
+          key={deleteTarget.id}
+          event={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={deleteEvent}
+        />
+      )}
       {toast && (
         <div className="toast" role="status">
           <Bell size={18} />
